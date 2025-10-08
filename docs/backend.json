@@ -214,6 +214,36 @@
             "completedAt": { "type": "string", "format": "date-time" }
         },
         "required": ["userId", "sessionId", "score", "category", "completedAt"]
+    },
+    "Asm2Session": {
+      "title": "ASM2 Session",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "status": { "type": "string", "enum": ["learning", "assessment", "report"] },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "lastSavedAt": { "type": "string", "format": "date-time" },
+        "total_score": { "type": "number" },
+        "version": { "type": "string" },
+        "answers": { "type": "object" },
+        "completedModules": { "type": "array", "items": { "type": "string" }}
+      },
+      "required": ["userId", "status", "startedAt"]
+    },
+    "Asm2Report": {
+        "title": "ASM2 Report",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "sessionId": { "type": "string" },
+            "score": { "type": "number" },
+            "category": { "type": "string" },
+            "topicBreakdown": { "type": "array", "items": {"type": "object"} },
+            "suggestions": { "type": "array", "items": { "type": "string" } },
+            "completedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "sessionId", "score", "category", "completedAt"]
     }
   },
   "auth": {
@@ -258,6 +288,14 @@
     "/asm1_reports/{reportId}": {
       "schema": { "$ref": "#/entities/Asm1Report" },
       "description": "Stores generated reports for completed ASM1 sessions."
+    },
+    "/asm2_sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/Asm2Session" },
+      "description": "Stores user assessment sessions for the ASM2 quiz."
+    },
+    "/asm2_reports/{reportId}": {
+      "schema": { "$ref": "#/entities/Asm2Report" },
+      "description": "Stores generated reports for completed ASM2 sessions."
     }
   }
 }

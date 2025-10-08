@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -13,6 +13,7 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recha
 import { ChartContainer } from '@/components/ui/chart';
 import { Loader2, ArrowLeft, ArrowRight, PlayCircle, BookOpen, FileText, Lightbulb, Music, Volume2, Pause, Play, Download, Calendar, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { collection, doc, serverTimestamp, where, query, getDocs } from 'firebase/firestore';
 
 // --- DATA MOCKS (as per spec) ---
 
@@ -158,6 +159,9 @@ function ReportView({ report, onRetake }: { report: any; onRetake: () => void })
 export default function Asm2Page() {
     const router = useRouter();
     const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
+
+    const [sessionId, setSessionId] = useState<string | null>(null);
     const [step, setStep] = useState('learning'); // learning, assessment, report
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [answers, setAnswers] = useState<Record<string, any>>({});
@@ -171,14 +175,55 @@ export default function Asm2Page() {
         if (!isUserLoading) {
             if (!user) {
                 router.push('/login?redirect=/assessments/asm2');
+            } else if (user && !sessionId) {
+                setIsLoading(true);
+                const sessionData = {
+                    userId: user.uid,
+                    status: 'learning',
+                    startedAt: serverTimestamp(),
+                    version: 'v1',
+                    answers: {},
+                    completedModules: []
+                };
+                addDocumentNonBlocking(collection(firestore, 'asm2_sessions'), sessionData)
+                    .then(docRef => {
+                        if (docRef) {
+                            setSessionId(docRef.id);
+                        }
+                        setIsLoading(false);
+                    });
             } else {
-                setIsLoading(false);
+                 setIsLoading(false);
             }
         }
-    }, [user, isUserLoading, router]);
+    }, [user, isUserLoading, router, firestore, sessionId]);
+    
+    // Auto-save logic
+    useEffect(() => {
+        if (!sessionId || !firestore || isLoading) return;
+        const timer = setTimeout(() => {
+            const sessionRef = doc(firestore, 'asm2_sessions', sessionId);
+            const dataToSave = {
+                answers,
+                completedModules,
+                lastSavedAt: serverTimestamp(),
+                status: step,
+            };
+            setDocumentNonBlocking(sessionRef, dataToSave, { merge: true });
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, [answers, completedModules, step, sessionId, firestore, isLoading]);
+
 
     const handleCompleteModule = (moduleId: string) => {
-        setCompletedModules(prev => [...new Set([...prev, moduleId])]);
+        setCompletedModules(prev => {
+            const newModules = [...new Set([...prev, moduleId])];
+            if (sessionId) {
+                const sessionRef = doc(firestore, 'asm2_sessions', sessionId);
+                setDocumentNonBlocking(sessionRef, { completedModules: newModules }, { merge: true });
+            }
+            return newModules;
+        });
     };
 
     const startAssessment = () => {
@@ -197,18 +242,48 @@ export default function Asm2Page() {
     const nextQuestion = () => setCurrentQuestion(prev => prev + 1);
     const prevQuestion = () => setCurrentQuestion(prev => prev - 1);
     
-    const handleSubmit = () => {
-        const finalReport = generateReport(answers);
-        setReport(finalReport);
+    const handleSubmit = async () => {
+        if (!firestore || !sessionId || !user) return;
+
+        const finalReportData = generateReport(answers);
+        
+        const reportToStore = {
+            userId: user.uid,
+            sessionId,
+            score: finalReportData.score,
+            category: finalReportData.category,
+            topicBreakdown: finalReportData.topicBreakdown,
+            suggestions: finalReportData.suggestions,
+            completedAt: serverTimestamp(),
+        };
+
+        setIsLoading(true);
+        
+        await addDocumentNonBlocking(collection(firestore, 'asm2_reports'), reportToStore);
+        const sessionRef = doc(firestore, 'asm2_sessions', sessionId);
+        await setDocumentNonBlocking(sessionRef, { status: 'report', completedAt: serverTimestamp(), total_score: finalReportData.score }, { merge: true });
+
+        setReport(finalReportData);
         setStep('report');
+        setIsLoading(false);
     };
+
+    const handleRetake = () => {
+        setAnswers({});
+        setCompletedModules([]);
+        setCurrentQuestion(0);
+        setReport(null);
+        setStep('learning');
+        setSessionId(null); // This will trigger creation of a new session
+    };
+
 
     if (isLoading || isUserLoading) {
         return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /> <span className="ml-4 text-lg">Loading...</span></div>;
     }
     
-    if (step === 'report') {
-        return <ReportView report={report} onRetake={() => { setStep('learning'); setReport(null); setAnswers({}); setCurrentQuestion(0); setCompletedModules([]) }} />
+    if (step === 'report' && report) {
+        return <ReportView report={report} onRetake={handleRetake} />
     }
 
     const currentItem = ASSESSMENT_ITEMS[currentQuestion];
