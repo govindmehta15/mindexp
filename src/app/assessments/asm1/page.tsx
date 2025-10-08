@@ -65,6 +65,12 @@ function PastAttempts({ userId }: { userId: string | null }) {
 
 function ReportView({ report, onRetake }: { report: any; onRetake: () => void }) {
     const chartData = report.history || [];
+    const chartConfig = {
+      score: {
+        label: "Score",
+        color: "hsl(var(--primary))",
+      },
+    };
     return (
         <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
             <Card>
@@ -108,14 +114,14 @@ function ReportView({ report, onRetake }: { report: any; onRetake: () => void })
                                 <CardDescription>Your scores over the last few attempts.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <ResponsiveContainer width="100%" height={200}>
-                                    <BarChart data={chartData}>
+                                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                                    <BarChart accessibilityLayer data={chartData}>
                                         <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false}/>
                                         <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} domain={[0, 30]}/>
                                         <ChartTooltip content={<ChartTooltipContent />} />
                                         <Bar dataKey="score" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                                     </BarChart>
-                                </ResponsiveContainer>
+                                </ChartContainer>
                             </CardContent>
                         </Card>
                     )}
