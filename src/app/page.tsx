@@ -48,15 +48,13 @@ const contentHighlights = [
     { title: "How to handle exam anxiety", href: "/content/1" },
     { title: "5-minute breathing routine for focus", href: "/content/2" },
     { title: "Why emotional awareness matters in classrooms", href: "/content/3" },
-]
+];
 
 export default function HomePage() {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
 
   const handleMoodSelection = (mood: string) => {
     setSelectedMood(mood);
-    // In a real app, you would redirect here:
-    // router.push(`/self-assessment?mood=${mood}`);
   };
 
   return (
