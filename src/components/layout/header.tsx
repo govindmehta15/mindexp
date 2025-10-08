@@ -1,80 +1,82 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import {
-  Bell,
-  LifeBuoy,
-  LogOut,
-  Search,
-  Settings,
-  User as UserIcon,
-} from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Atom, Menu } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+
+const navItems = [
+    { href: "/community", label: "Community" },
+    { href: "/resources", label: "Resources" },
+    { href: "/events", label: "Events" },
+    { href: "/professionals", label: "For Professionals" },
+];
 
 export function AppHeader() {
-  return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-      <div className="flex items-center gap-2">
-        <SidebarTrigger className="md:hidden" />
-        <h1 className="font-headline text-lg font-bold md:hidden">WellTrack</h1>
-      </div>
+  const pathname = usePathname();
 
-      <div className="flex w-full items-center gap-4 md:gap-2 lg:gap-4">
-        <form className="ml-auto flex-1 sm:flex-initial">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search..."
-              className="pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px] rounded-full"
-            />
-          </div>
-        </form>
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Bell className="h-5 w-5" />
-          <span className="sr-only">Toggle notifications</span>
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="https://picsum.photos/seed/101/40/40" alt="@shadcn" />
-                <AvatarFallback>AD</AvatarFallback>
-              </Avatar>
+  return (
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center">
+        <Link href="/" className="mr-6 flex items-center gap-2 font-bold text-xl font-headline">
+          <Atom className="w-8 h-8 text-primary" />
+          MindExp
+        </Link>
+
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className={cn(
+                "transition-colors hover:text-foreground/80",
+                pathname === item.href ? "text-foreground" : "text-foreground/60"
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex flex-1 items-center justify-end gap-2">
+            <Button variant="ghost" asChild>
+                <Link href="/login">Log In</Link>
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <UserIcon className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <LifeBuoy className="mr-2 h-4 w-4" />
-              <span>Support</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <Button asChild>
+                <Link href="/signup">Sign Up</Link>
+            </Button>
+
+            <Sheet>
+                <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon" className="md:hidden">
+                        <Menu />
+                        <span className="sr-only">Toggle Menu</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="left">
+                     <Link href="/" className="mr-6 flex items-center gap-2 font-bold text-xl font-headline mb-6">
+                        <Atom className="w-8 h-8 text-primary" />
+                        MindExp
+                    </Link>
+                    <div className="flex flex-col gap-4">
+                        {navItems.map((item) => (
+                             <Link
+                                key={item.label}
+                                href={item.href}
+                                className={cn(
+                                    "font-medium transition-colors hover:text-primary",
+                                    pathname === item.href ? "text-primary" : "text-muted-foreground"
+                                )}
+                            >
+                                {item.label}
+                            </Link>
+                        ))}
+                    </div>
+                </SheetContent>
+            </Sheet>
+        </div>
       </div>
     </header>
   );

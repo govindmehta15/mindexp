@@ -1,41 +1,79 @@
-import { channels } from '@/lib/data';
-import type { Channel } from '@/lib/types';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import Image from 'next/image';
 
-export default function CommunityPage() {
+export default function HomePage() {
   return (
-    <div className="container mx-auto">
-      <header className="mb-8">
-        <h1 className="font-headline text-4xl font-bold tracking-tight">Community Forums</h1>
-        <p className="text-muted-foreground mt-2 text-lg">
-          Find your space. Connect with peers, share experiences, and find support.
-        </p>
-      </header>
+    <div className="flex flex-col">
+      <section className="bg-secondary">
+        <div className="container mx-auto grid md:grid-cols-2 gap-12 items-center py-20 md:py-32">
+          <div className="space-y-6">
+            <h1 className="font-headline text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
+              A safer place for student wellbeing
+            </h1>
+            <p className="text-lg md:text-xl text-muted-foreground">
+              Peer support, clinician-backed resources, and research that works.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button asChild size="lg">
+                <Link href="/community">Join as a student</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/professionals">Are you a professional?</Link>
+              </Button>
+            </div>
+          </div>
+           <div className="relative h-64 md:h-96 rounded-lg overflow-hidden shadow-2xl">
+              <Image 
+                src="https://picsum.photos/seed/hero/1200/800" 
+                alt="Students collaborating"
+                fill
+                style={{objectFit: 'cover'}}
+                data-ai-hint="students collaborating"
+                priority
+              />
+          </div>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {channels.map((channel: Channel) => (
-          <Link href={`/community/${channel.id}`} key={channel.id} className="group">
-            <Card className="h-full flex flex-col transition-all duration-300 ease-in-out group-hover:shadow-lg group-hover:-translate-y-1">
-              <CardHeader>
-                <CardTitle className="font-headline text-2xl">{channel.name}</CardTitle>
-                <CardDescription className="text-base">{channel.description}</CardDescription>
-              </CardHeader>
-              <CardFooter className="mt-auto flex justify-between items-center">
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  <span>{channel.postCount} posts</span>
+      <section className="py-20 md:py-32">
+        <div className="container mx-auto text-center">
+            <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-12">
+                We provide three core pillars to support student mental wellness in a holistic and effective way.
+            </p>
+            <div className="grid md:grid-cols-3 gap-8">
+                <div className="p-8 border rounded-lg bg-card text-card-foreground">
+                    <h3 className="font-headline text-2xl font-bold mb-2">Peer Community</h3>
+                    <p className="text-muted-foreground">Connect with fellow students in safe, moderated forums to share experiences and find solidarity.</p>
                 </div>
-                <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  Join <ArrowRight className="ml-2 h-4 w-4" />
+                <div className="p-8 border rounded-lg bg-card text-card-foreground">
+                    <h3 className="font-headline text-2xl font-bold mb-2">Resource Hub</h3>
+                    <p className="text-muted-foreground">Access a library of clinician-backed articles, videos, and tools tailored to student life.</p>
+                </div>
+                 <div className="p-8 border rounded-lg bg-card text-card-foreground">
+                    <h3 className="font-headline text-2xl font-bold mb-2">Meaningful Research</h3>
+                    <p className="text-muted-foreground">Contribute to and benefit from cutting-edge research to improve mental health outcomes globally.</p>
+                </div>
+            </div>
+        </div>
+      </section>
+      
+      <section className="bg-primary text-primary-foreground">
+          <div className="container mx-auto text-center py-16">
+               <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4">
+                  Calling clinicians & researchers
+                </h2>
+                <p className="text-lg text-primary-foreground/80 max-w-3xl mx-auto mb-8">
+                  Collaborate on global projects to improve student mental health. Publish with us & access anonymized student datasets.
+                </p>
+                 <Button asChild size="lg" variant="secondary">
+                    <Link href="/professionals">Learn More & Partner With Us</Link>
                 </Button>
-              </CardFooter>
-            </Card>
-          </Link>
-        ))}
-      </div>
+          </div>
+      </section>
+
     </div>
   );
 }

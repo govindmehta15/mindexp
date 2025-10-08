@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { AppSidebar } from '@/components/layout/sidebar';
 
 function ReplyCard({ reply }: { reply: Reply }) {
   return (
@@ -42,48 +43,51 @@ export default function PostPage({ params }: { params: { postId: string } }) {
   }
 
   return (
-    <div className="container mx-auto max-w-4xl">
-      <Card>
-        <CardHeader>
-          {post.isFlagged && <Badge variant="destructive" className="mb-2 w-fit">Flagged for Review</Badge>}
-          <CardTitle className="font-headline text-3xl md:text-4xl">{post.title}</CardTitle>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={post.author.avatarUrl} alt={post.author.name} />
-              <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <span>{post.author.isAnonymous ? 'Anonymous' : post.author.name}</span>
-            <span>&middot;</span>
-            <span>{post.createdAt}</span>
-          </div>
-        </CardHeader>
-        <CardContent className="text-lg leading-relaxed">
-          <p>{post.content}</p>
-        </CardContent>
-      </Card>
+     <div className="flex">
+        <AppSidebar />
+        <div className="flex-1 p-4 md:p-6 lg:p-8 max-w-4xl mx-auto">
+            <Card>
+                <CardHeader>
+                {post.isFlagged && <Badge variant="destructive" className="mb-2 w-fit">Flagged for Review</Badge>}
+                <CardTitle className="font-headline text-3xl md:text-4xl">{post.title}</CardTitle>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
+                    <Avatar className="h-6 w-6">
+                    <AvatarImage src={post.author.avatarUrl} alt={post.author.name} />
+                    <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span>{post.author.isAnonymous ? 'Anonymous' : post.author.name}</span>
+                    <span>&middot;</span>
+                    <span>{post.createdAt}</span>
+                </div>
+                </CardHeader>
+                <CardContent className="text-lg leading-relaxed">
+                <p>{post.content}</p>
+                </CardContent>
+            </Card>
 
-      <Separator className="my-8" />
-      
-      <h2 className="font-headline text-2xl font-bold mb-6">{post.replies.length} Replies</h2>
+            <Separator className="my-8" />
+            
+            <h2 className="font-headline text-2xl font-bold mb-6">{post.replies.length} Replies</h2>
 
-      <div className="space-y-8 mb-8">
-        {post.replies.map((reply) => (
-          <ReplyCard key={reply.id} reply={reply} />
-        ))}
-      </div>
-      
-      <Card>
-        <CardHeader>
-            <h3 className="font-headline text-xl font-bold">Add a reply</h3>
-        </CardHeader>
-        <CardContent>
-             <Textarea placeholder="Share your thoughts..." rows={4} />
-        </CardContent>
-        <CardFooter className='flex justify-end'>
-            <Button>Submit Reply</Button>
-        </CardFooter>
-      </Card>
+            <div className="space-y-8 mb-8">
+                {post.replies.map((reply) => (
+                <ReplyCard key={reply.id} reply={reply} />
+                ))}
+            </div>
+            
+            <Card>
+                <CardHeader>
+                    <h3 className="font-headline text-xl font-bold">Add a reply</h3>
+                </CardHeader>
+                <CardContent>
+                    <Textarea placeholder="Share your thoughts..." rows={4} />
+                </CardContent>
+                <CardFooter className='flex justify-end'>
+                    <Button>Submit Reply</Button>
+                </CardFooter>
+            </Card>
 
+        </div>
     </div>
   );
 }

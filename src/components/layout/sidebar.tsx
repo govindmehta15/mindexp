@@ -23,7 +23,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/", label: "Community", icon: MessageSquare },
+  { href: "/community", label: "Community", icon: MessageSquare },
   { href: "/resources", label: "Resource Hub", icon: Library },
   { href: "/events", label: "Events", icon: Calendar },
   { href: "/professionals", label: "Professionals", icon: Users },
@@ -37,7 +37,7 @@ export function AppSidebar() {
     <Sidebar className="border-r" variant="sidebar">
       <SidebarHeader className="flex items-center gap-2 p-4">
         <Atom className="w-8 h-8 text-primary" />
-        <h1 className="font-headline text-2xl font-bold">WellTrack</h1>
+        <h1 className="font-headline text-2xl font-bold">MindExp</h1>
       </SidebarHeader>
       <SidebarContent className="p-4">
         <SidebarMenu>
@@ -45,7 +45,7 @@ export function AppSidebar() {
             <SidebarMenuItem key={item.label}>
               <Link href={item.href} passHref>
                 <SidebarMenuButton
-                  isActive={pathname === item.href}
+                  isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')}
                   className="w-full justify-start"
                 >
                   <item.icon className="h-5 w-5 mr-3" />
