@@ -206,7 +206,7 @@ export default function HomePage() {
              </Carousel>
               <div className="text-center mt-8">
                 <Button variant="link" asChild>
-                    <Link href="/community">Read more stories →</Link>
+                    <Link href="/community/stories">Read more stories →</Link>
                 </Button>
               </div>
           </div>
@@ -224,7 +224,9 @@ export default function HomePage() {
                         </CardHeader>
                         <CardContent>
                             <p className="text-muted-foreground mb-4">{project.summary}</p>
-                            <Button>Join Study</Button>
+                            <Button asChild>
+                                <Link href="/join-study">Join Study</Link>
+                            </Button>
                         </CardContent>
                     </Card>
                 ))}
@@ -285,11 +287,11 @@ export default function HomePage() {
              <div className="container mx-auto text-center text-primary-foreground">
                 <h2 className="text-3xl md:text-4xl font-bold font-headline mb-6">We’re building a movement for students, by students.</h2>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button size="lg" variant="secondary">
-                        Join as Student Ambassador
+                    <Button size="lg" variant="secondary" asChild>
+                        <Link href="/community/student">Join as Student Ambassador</Link>
                     </Button>
-                    <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-primary">
-                       Join as Psychologist / Research Partner
+                    <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-primary" asChild>
+                       <Link href="/community/professional">Join as Psychologist / Research Partner</Link>
                     </Button>
                 </div>
             </div>
