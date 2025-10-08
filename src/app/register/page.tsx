@@ -2,7 +2,9 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useAuth, initiateEmailSignUp, setDocumentNonBlocking } from '@/firebase';
+import { useAuth } from '@/firebase/provider';
+import { initiateEmailSignUp } from '@/firebase/non-blocking-login';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -83,7 +85,6 @@ function RegisterFormComponent() {
     try {
       const userCredential = await initiateEmailSignUp(auth, values.email, values.password);
       
-      // After user is created, save their info to Firestore
       if (userCredential && userCredential.user) {
         const userRef = doc(firestore, 'users', userCredential.user.uid);
         const userData = {
@@ -93,7 +94,6 @@ function RegisterFormComponent() {
           role: values.role,
           createdAt: serverTimestamp(),
         };
-        // This is a non-blocking write
         setDocumentNonBlocking(userRef, userData, { merge: true });
       }
 
@@ -103,15 +103,18 @@ function RegisterFormComponent() {
       });
       router.push('/community');
     } catch (error) {
-      console.error(error);
+      console.error('Signup Error:', error);
       let errorMessage = 'An unexpected error occurred.';
       if (error instanceof FirebaseError) {
         switch (error.code) {
           case 'auth/email-already-in-use':
-            errorMessage = 'This email is already associated with an account.';
+            errorMessage = 'This email is already registered. Please try logging in.';
             break;
           case 'auth/weak-password':
             errorMessage = 'The password is too weak. Please use at least 6 characters.';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'The email address is not valid.';
             break;
           default:
             errorMessage = 'Failed to create an account. Please try again.';

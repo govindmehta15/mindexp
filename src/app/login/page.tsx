@@ -2,7 +2,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth, initiateEmailSignIn } from '@/firebase';
+import { useAuth } from '@/firebase/provider';
+import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,16 +27,14 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // We are not awaiting the result here to follow the non-blocking pattern
-      // The auth state change will be handled by the onAuthStateChanged listener in the provider
       await initiateEmailSignIn(auth, email, password);
       toast({
         title: 'Login Successful',
         description: "You're now logged in.",
       });
-      router.push('/community'); // Redirect to a protected route after login
+      router.push('/community');
     } catch (error) {
-      console.error(error);
+      console.error('Login Error:', error);
       let errorMessage = 'An unexpected error occurred.';
       if (error instanceof FirebaseError) {
         switch (error.code) {
@@ -45,7 +44,7 @@ export default function LoginPage() {
             errorMessage = 'Invalid email or password. Please try again.';
             break;
           default:
-            errorMessage = 'Failed to log in. Please check your credentials.';
+            errorMessage = 'Failed to log in. Please check your credentials and try again.';
             break;
         }
       }
