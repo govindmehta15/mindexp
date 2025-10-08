@@ -2,12 +2,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Atom, Menu, Globe } from "lucide-react";
+import { Atom, Menu, Globe, Home } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const navItems = [
+    { href: "/", label: "Home" },
     { href: "/community", label: "Community" },
     { href: "/assessments", label: "Assessments" },
     { href: "/research", label: "Research" },
@@ -33,7 +34,7 @@ export function AppHeader() {
               href={item.href}
               className={cn(
                 "transition-colors hover:text-foreground/80",
-                pathname.startsWith(item.href) ? "text-foreground" : "text-foreground/60"
+                pathname === item.href ? "text-foreground" : "text-foreground/60"
               )}
             >
               {item.label}
@@ -72,7 +73,7 @@ export function AppHeader() {
                                 href={item.href}
                                 className={cn(
                                     "font-medium transition-colors hover:text-primary",
-                                    pathname.startsWith(item.href) ? "text-primary" : "text-muted-foreground"
+                                    pathname === item.href ? "text-primary" : "text-muted-foreground"
                                 )}
                             >
                                 {item.label}

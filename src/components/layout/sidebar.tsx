@@ -19,11 +19,13 @@ import {
   LogOut,
   Atom,
   BookHeart,
+  Home,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
+  { href: "/", label: "Home", icon: Home },
   { href: "/community", label: "Community", icon: MessageSquare },
   { href: "/resources", label: "Resource Hub", icon: Library },
   { href: "/content", label: "Content Hub", icon: BookHeart },
@@ -47,7 +49,7 @@ export function AppSidebar() {
             <SidebarMenuItem key={item.label}>
               <Link href={item.href} passHref>
                 <SidebarMenuButton
-                  isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')}
+                  isActive={pathname === item.href}
                   className="w-full justify-start"
                 >
                   <item.icon className="h-5 w-5 mr-3" />
