@@ -1,8 +1,9 @@
+
 'use client';
 
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
@@ -73,8 +74,10 @@ function renderMedia(resource: (typeof resources)[0]) {
   }
 }
 
-export default function ContentPage({ params }: { params: { id: string } }) {
-  const resource = resources.find((r) => r.id === params.id);
+export default function ContentPage() {
+  const params = useParams();
+  const id = params.id as string;
+  const resource = resources.find((r) => r.id === id);
 
   if (!resource) {
     notFound();
