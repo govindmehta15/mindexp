@@ -1,3 +1,4 @@
+
 export type User = {
   id: string;
   name: string;
@@ -37,7 +38,7 @@ export type Resource = {
   id: string;
   title: string;
   description: string;
-  type: 'Article' | 'Video' | 'Podcast' | 'Guide';
+  type: 'Article' | 'Video' | 'Podcast' | 'Guide' | 'Misc';
   topic: string;
   language: string;
   universityAffiliation?: string;
@@ -71,4 +72,16 @@ export type Professional = {
   university: string;
   profileUrl: string;
   imageHint: string;
+};
+
+export type Assessment = {
+  id: string;
+  title: string;
+  description: string;
+  type: 'MCQ' | 'Video + Quiz' | 'Reading + Essay' | 'Peer Review';
+  topic: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  estimatedTime: number; // in minutes
+  status: 'Not Started' | 'In Progress' | 'Completed';
+  contentUrls: string[];
 };

@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -20,6 +21,7 @@ import {
   Atom,
   BookHeart,
   Home,
+  ClipboardCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -27,6 +29,7 @@ import { usePathname } from "next/navigation";
 const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/community", label: "Community", icon: MessageSquare },
+  { href: "/assessments", label: "Assessments", icon: ClipboardCheck },
   { href: "/resources", label: "Resource Hub", icon: Library },
   { href: "/content", label: "Content Hub", icon: BookHeart },
   { href: "/events", label: "Events", icon: Calendar },
@@ -49,7 +52,7 @@ export function AppSidebar() {
             <SidebarMenuItem key={item.label}>
               <Link href={item.href} passHref>
                 <SidebarMenuButton
-                  isActive={pathname === item.href}
+                  isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')}
                   className="w-full justify-start"
                 >
                   <item.icon className="h-5 w-5 mr-3" />
