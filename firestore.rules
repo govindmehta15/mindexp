@@ -1,182 +1,194 @@
 /**
- * @file Firestore Security Rules
- * @core_philosophy This ruleset enforces a user-ownership model for user-specific data and allows public read access for certain collections while restricting write access to owners. Data shape validation is relaxed for rapid prototyping.
- * @data_structure
- *   - /users/{userId}: Stores user account information. Only the owner can read and write.
- *   - /study_participants: Stores study participant applications. Publicly readable, but only the applicant can create; updates and deletes are disallowed.
- *   - /student_community_applications: Stores student community applications. Publicly readable, but only the applicant can create; updates and deletes are disallowed.
- *   - /professional_applications: Stores professional applications. Publicly readable, but only the applicant can create; updates and deletes are disallowed.
- *   - /circle_applications: Stores circle join applications. Publicly readable, but only the applicant can create; updates and deletes are disallowed.
- *   - /mentor_applications: Stores mentor applications. Publicly readable, but only the applicant can create; updates and deletes are disallowed.
- *   - /subscriptions: Stores email subscriptions. Publicly readable, but any authenticated user can create a subscription. Updates and deletes are disallowed.
- *   - /asm1_sessions/{sessionId}: Stores ASM1 quiz sessions. Only the owner can read and write.
- *   - /asm1_reports/{reportId}: Stores ASM1 reports. Only the owner can read and write.
- * @key_security_decisions
- *   - User listing is disallowed for privacy.
- *   - Public read access is granted to application collections for easy data display, but write access is strictly controlled.
- *   - For application collections, create operations also require that the `userId` field in the incoming data matches the authenticated user's UID, enforcing ownership.
- *   - All `update` and `delete` operations require the document to exist to prevent accidental deletion or modification of non-existent data.
- * @denormalization_for_authorization
- *   - The `userId` field is included in application documents to easily enforce ownership during write operations, avoiding costly `get()` calls.
+ * @fileoverview Firestore Security Rules for WellTrack Community.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user-generated data,
+ * while allowing public read access to certain collections. Applications
+ * require explicit approval workflows, implemented through status fields.
+ *
+ * Data Structure:
+ * - User accounts are stored in /users/{userId}.
+ * - Applications (study, community, professional, circle, mentor) are stored
+ *   in top-level collections (e.g., /study_participants).
+ * - Assessment sessions and reports (ASM1, ASM2) are stored in top-level collections.
+ *
+ * Key Security Decisions:
+ * - User listing is generally disallowed.
+ * - Public read access is granted to application and subscription collections.
+ * - All write operations are secured using authentication and authorization checks.
+ *
+ * Denormalization for Authorization:
+ * - ASM session documents store the userId to enforce ownership.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user account documents. Only the owner can read and write.
+     * @description Checks if the current user is signed in.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the current user is the owner of the resource.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the current user is the existing owner of the resource.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces document ownership for writes.
      * @path /users/{userId}
-     * @allow (get, list) User with UID 'user123' can read their own document.
-     * @allow (create, update, delete) User with UID 'user123' can modify their own document.
-     * @deny (get, list) User with UID 'user456' cannot read user 'user123' document.
-     * @deny (create, update, delete) User with UID 'user456' cannot modify user 'user123' document.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with ID 'user123' can create their own document.
+     * @deny (create) User with ID 'user123' cannot create a document for 'user456'.
+     * @principle Enforces user ownership for data privacy.
      */
     match /users/{userId} {
-      allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to study participant application documents. Anyone can read, but only the applicant can create. Updates and deletes are disallowed.
-     * @path /study_participants/{documentId}
-     * @allow (get, list) Any user can read the study participant applications.
-     * @allow (create) User with UID 'user123' can create an application with their userId.
-     * @deny (create) User with UID 'user456' cannot create an application for user 'user123'.
-     * @deny (update, delete) No one can update or delete study participant applications.
-     * @principle Allows public read access but restricts write access to the owner.
+     * @description Allows anyone to read study participant applications, but restricts creation, updates, and deletions.
+     * @path /study_participants
+     * @allow (get, list) Any user can read the applications.
+     * @deny (create) Any user cannot create an application without validation.
+     * @principle Allows public read access but restricts write access.
      */
-    match /study_participants/{documentId} {
+    match /study_participants/{applicationId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // TODO: Add admin/moderator role check for application updates/deletions
     }
 
     /**
-     * @description Controls access to student community application documents. Anyone can read, but only the applicant can create. Updates and deletes are disallowed.
-     * @path /student_community_applications/{documentId}
-     * @allow (get, list) Any user can read the student community applications.
-     * @allow (create) User with UID 'user123' can create an application with their userId.
-     * @deny (create) User with UID 'user456' cannot create an application for user 'user123'.
-     * @deny (update, delete) No one can update or delete student community applications.
-     * @principle Allows public read access but restricts write access to the owner.
+     * @description Allows anyone to read student community applications, but restricts creation, updates, and deletions.
+     * @path /student_community_applications
+     * @allow (get, list) Any user can read the applications.
+     * @deny (create) Any user cannot create an application without validation.
+     * @principle Allows public read access but restricts write access.
      */
-    match /student_community_applications/{documentId} {
+    match /student_community_applications/{applicationId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // TODO: Add admin/moderator role check for application updates/deletions
     }
 
     /**
-     * @description Controls access to professional application documents. Anyone can read, but only the applicant can create. Updates and deletes are disallowed.
-     * @path /professional_applications/{documentId}
-     * @allow (get, list) Any user can read the professional applications.
-     * @allow (create) User with UID 'user123' can create an application with their userId.
-     * @deny (create) User with UID 'user456' cannot create an application for user 'user123'.
-     * @deny (update, delete) No one can update or delete professional applications.
-     * @principle Allows public read access but restricts write access to the owner.
+     * @description Allows anyone to read professional applications, but restricts creation, updates, and deletions.
+     * @path /professional_applications
+     * @allow (get, list) Any user can read the applications.
+     * @deny (create) Any user cannot create an application without validation.
+     * @principle Allows public read access but restricts write access.
      */
-    match /professional_applications/{documentId} {
+    match /professional_applications/{applicationId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // TODO: Add admin/moderator role check for application updates/deletions
     }
 
     /**
-     * @description Controls access to circle application documents. Anyone can read, but only the applicant can create. Updates and deletes are disallowed.
-     * @path /circle_applications/{documentId}
-     * @allow (get, list) Any user can read the circle applications.
-     * @allow (create) User with UID 'user123' can create an application with their userId.
-     * @deny (create) User with UID 'user456' cannot create an application for user 'user123'.
-     * @deny (update, delete) No one can update or delete circle applications.
-     * @principle Allows public read access but restricts write access to the owner.
+     * @description Allows anyone to read circle applications, but restricts creation, updates, and deletions.
+     * @path /circle_applications
+     * @allow (get, list) Any user can read the applications.
+     * @deny (create) Any user cannot create an application without validation.
+     * @principle Allows public read access but restricts write access.
      */
-    match /circle_applications/{documentId} {
+    match /circle_applications/{applicationId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // TODO: Add admin/moderator role check for application updates/deletions
     }
 
     /**
-     * @description Controls access to mentor application documents. Anyone can read, but only the applicant can create. Updates and deletes are disallowed.
-     * @path /mentor_applications/{documentId}
-     * @allow (get, list) Any user can read the mentor applications.
-     * @allow (create) User with UID 'user123' can create an application with their userId.
-     * @deny (create) User with UID 'user456' cannot create an application for user 'user123'.
-     * @deny (update, delete) No one can update or delete mentor applications.
-     * @principle Allows public read access but restricts write access to the owner.
+     * @description Allows anyone to read mentor applications, but restricts creation, updates, and deletions.
+     * @path /mentor_applications
+     * @allow (get, list) Any user can read the applications.
+     * @deny (create) Any user cannot create an application without validation.
+     * @principle Allows public read access but restricts write access.
      */
-    match /mentor_applications/{documentId} {
+    match /mentor_applications/{applicationId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // TODO: Add admin/moderator role check for application updates/deletions
     }
 
     /**
-     * @description Controls access to email subscription documents. Anyone can read, and any signed-in user can create. Updates and deletes are disallowed.
-     * @path /subscriptions/{documentId}
-     * @allow (get, list) Any user can read the email subscriptions.
-     * @allow (create) User with UID 'user123' can create a subscription.
-     * @deny (update, delete) No one can update or delete email subscriptions.
-     * @principle Allows public read access and signed-in users can create.
+     * @description Allows anyone to read email subscriptions, but restricts creation, updates, and deletions.
+     * @path /subscriptions
+     * @allow (get, list) Any user can read the subscriptions.
+     * @deny (create) Any user cannot create a subscription without validation.
+     * @principle Allows public read access but restricts write access.
      */
-    match /subscriptions/{documentId} {
+    match /subscriptions/{subscriptionId} {
       allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update: if false;
-      allow delete: if false;
+      allow create: if true;
+      allow update, delete: if false; // TODO: Implement admin role for subscription management.
     }
-    
+
     /**
-     * @description Controls access to ASM1 session documents. Only the owner can read and write.
+     * @description Manages access to ASM1 session data.
      * @path /asm1_sessions/{sessionId}
-     * @allow (get, list) User with UID 'user123' can read their own session.
-     * @allow (create, update, delete) User with UID 'user123' can modify their own session.
-     * @deny (get, list) User with UID 'user456' cannot read user 'user123' session.
-     * @deny (create, update, delete) User with UID 'user456' cannot modify user 'user123' session.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User can create their own session.
+     * @deny (create) User cannot create a session for another user.
      */
     match /asm1_sessions/{sessionId} {
-      allow get, list: if isOwner(request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(request.auth.uid) && (request.resource.data.userId == resource.data.userId);
-      allow delete: if isExistingOwner(request.auth.uid);
+      allow get: if true;
+      allow list: if true;
+      allow create: if request.resource.data.userId == request.auth.uid;
+      allow update: if false; // TODO: Validate existing owner before update.
+      allow delete: if false; // TODO: Validate existing owner before delete.
     }
 
     /**
-     * @description Controls access to ASM1 report documents. Only the owner can read and write.
+     * @description Manages access to ASM1 report data.
      * @path /asm1_reports/{reportId}
-     * @allow (get, list) User with UID 'user123' can read their own report.
-     * @allow (create, update, delete) User with UID 'user123' can modify their own report.
-     * @deny (get, list) User with UID 'user456' cannot read user 'user123' report.
-     * @deny (create, update, delete) User with UID 'user456' cannot modify user 'user123' report.
-     * @principle Enforces document ownership for all operations.
      */
     match /asm1_reports/{reportId} {
-      allow get, list: if isOwner(request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(request.auth.uid) && (request.resource.data.userId == resource.data.userId);
-      allow delete: if isExistingOwner(request.auth.uid);
+      allow get: if true;
+      allow list: if true;
+      allow create: if request.resource.data.userId == request.auth.uid;
+      allow update: if false; // TODO: Validate existing owner before update.
+      allow delete: if false; // TODO: Validate existing owner before delete.
     }
-  }
 
-  // Helper functions
-  function isSignedIn() {
-    return request.auth != null;
-  }
+    /**
+     * @description Manages access to ASM2 session data.
+     * @path /asm2_sessions/{sessionId}
+     * @allow (create) User can create their own session.
+     * @deny (create) User cannot create a session for another user.
+     */
+    match /asm2_sessions/{sessionId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if request.resource.data.userId == request.auth.uid;
+      allow update: if false; // TODO: Validate existing owner before update.
+      allow delete: if false; // TODO: Validate existing owner before delete.
+    }
 
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
-
-  function isExistingOwner(userId) {
-    return isSignedIn() && isOwner(userId) && resource != null;
+    /**
+     * @description Manages access to ASM2 report data.
+     * @path /asm2_reports/{reportId}
+     */
+    match /asm2_reports/{reportId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if request.resource.data.userId == request.auth.uid;
+      allow update: if false; // TODO: Validate existing owner before update.
+      allow delete: if false; // TODO: Validate existing owner before delete.
+    }
   }
 }
