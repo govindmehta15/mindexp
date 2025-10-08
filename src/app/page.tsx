@@ -7,6 +7,7 @@ import { BrainCircuit, Heart, Users, GraduationCap, Brain, Microscope, BookHeart
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 
+
 const featureCards = [
   { 
     icon: GraduationCap, 
@@ -32,7 +33,7 @@ const featureCards = [
   { 
     icon: BookHeart, 
     title: "Content Hub", 
-    description: "Explore stories, podcasts, videos, and guides made for students.", 
+    description: "Explore stories, podcasts, videos, and guides made for students.",
     cta: "Visit Hub →",
     href: "/content"
   }
@@ -92,7 +93,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* 1. Hero Section */}
-      <section className="bg-gradient-to-br from-primary/80 to-secondary/80 text-primary-foreground py-20 md:py-32">
+      <section className="bg-gradient-to-br from-primary/80 to-accent text-primary-foreground py-20 md:py-32">
         <div className="container mx-auto text-center px-4">
             <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4">
                 Building the world’s first global student support ecosystem.
@@ -157,7 +158,7 @@ export default function HomePage() {
       </section>
 
       {/* 3. Explore the Ecosystem */}
-      <section className="py-16 md:py-24 bg-muted/50">
+      <section className="py-16 md:py-24 bg-muted/30">
           <div className="container mx-auto">
               <h2 className="text-3xl md:text-4xl font-bold font-headline text-center mb-12">An ecosystem that grows with you.</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -280,7 +281,7 @@ export default function HomePage() {
         </section>
 
         {/* 8. Global CTA */}
-        <section className="py-20 bg-gradient-to-r from-primary to-accent">
+        <section className="py-20 bg-gradient-to-r from-primary to-secondary">
              <div className="container mx-auto text-center text-primary-foreground">
                 <h2 className="text-3xl md:text-4xl font-bold font-headline mb-6">We’re building a movement for students, by students.</h2>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
