@@ -80,6 +80,89 @@
       "required": [
         "id"
       ]
+    },
+    "StudyParticipantApplication": {
+      "title": "Study Participant Application",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "institution": { "type": "string" },
+        "country": { "type": "string" },
+        "areaOfInterest": { "type": "string" },
+        "availability": { "type": "string" },
+        "reasonToJoin": { "type": "string" },
+        "status": { "type": "string", "enum": ["submitted", "approved", "rejected"] },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "fullName", "email", "institution", "country", "areaOfInterest", "availability", "status", "submittedAt"]
+    },
+    "StudentCommunityApplication": {
+        "title": "Student Community Application",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "fullName": { "type": "string" },
+            "email": { "type": "string", "format": "email" },
+            "institution": { "type": "string" },
+            "country": { "type": "string" },
+            "fieldOfStudy": { "type": "string" },
+            "interests": { "type": "array", "items": { "type": "string" } },
+            "motivation": { "type": "string" },
+            "status": { "type": "string", "enum": ["submitted", "approved", "rejected"] },
+            "submittedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "fullName", "email", "institution", "country", "fieldOfStudy", "status", "submittedAt"]
+    },
+    "ProfessionalApplication": {
+        "title": "Professional Application",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "fullName": { "type": "string" },
+            "email": { "type": "string", "format": "email" },
+            "professionalTitle": { "type": "string" },
+            "organization": { "type": "string" },
+            "country": { "type": "string" },
+            "yearsOfExperience": { "type": "number" },
+            "expertise": { "type": "string" },
+            "availability": { "type": "string" },
+            "message": { "type": "string" },
+            "status": { "type": "string", "enum": ["submitted", "approved", "rejected"] },
+            "submittedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "fullName", "email", "professionalTitle", "organization", "country", "expertise", "availability", "status", "submittedAt"]
+    },
+    "CircleApplication": {
+        "title": "Circle Application",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "circleId": { "type": "string" },
+            "introduction": { "type": "string" },
+            "status": { "type": "string", "enum": ["submitted", "approved", "rejected"] },
+            "submittedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "circleId", "introduction", "status", "submittedAt"]
+    },
+    "MentorApplication": {
+        "title": "Mentor Application",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "fullName": { "type": "string" },
+            "email": { "type": "string", "format": "email" },
+            "linkedin": { "type": "string" },
+            "country": { "type": "string" },
+            "expertise": { "type": "string" },
+            "experience": { "type": "number" },
+            "availability": { "type": "string" },
+            "motivation": { "type": "string" },
+            "status": { "type": "string", "enum": ["submitted", "approved", "rejected"] },
+            "submittedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "fullName", "email", "country", "expertise", "availability", "status", "submittedAt"]
     }
   },
   "auth": {
@@ -89,40 +172,29 @@
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "UserAccount",
-          "schema": {
-            "$ref": "#/backend/entities/UserAccount"
-          },
-          "description": "Stores user account information. Uses path-based ownership: only the user with the corresponding userId can access this document.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user. This matches the Clerk.dev user ID."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/profile",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Stores user profile information. This is a subcollection of the user document, ensuring only the user can access their profile.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "This Firestore structure prioritizes authorization independence and QAPs. User accounts and profiles are stored under `/users/{userId}` for path-based ownership. The structure supports the core features of WellTrack Community, including the community forum, resource hub, events calendar, and professional profiles. Because all assessment and community forum content is user-specific, the structure uses path-based ownership. This structure facilitates simple security rules based on `request.auth.uid`. Specifically, to enable `list` operations, all documents in a collection must share the same security requirements. This is achieved by segregating data based on ownership. This design supports the integrity of ownership, timestamps, and denormalized data. Importantly, this design avoids `get()` calls in security rules, enabling atomic operations (transactions/batches)."
+    "/users/{userId}": {
+        "schema": { "$ref": "#/entities/UserAccount" },
+        "description": "Stores user account information."
+    },
+    "/study_participants": {
+        "schema": { "$ref": "#/entities/StudyParticipantApplication" },
+        "description": "Stores applications to join study programs."
+    },
+    "/student_community_applications": {
+        "schema": { "$ref": "#/entities/StudentCommunityApplication" },
+        "description": "Stores applications from students to join the community."
+    },
+    "/professional_applications": {
+        "schema": { "$ref": "#/entities/ProfessionalApplication" },
+        "description": "Stores applications from professionals to join the community."
+    },
+    "/circle_applications": {
+        "schema": { "$ref": "#/entities/CircleApplication" },
+        "description": "Stores applications to join specific circles."
+    },
+    "/mentor_applications": {
+        "schema": { "$ref": "#/entities/MentorApplication" },
+        "description": "Stores applications from users wanting to become mentors."
+    }
   }
 }

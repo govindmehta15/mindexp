@@ -1,8 +1,9 @@
+
 'use client';
 
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,11 +14,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 function MentorForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
     const { toast } = useToast();
 
     if (isUserLoading) {
@@ -39,9 +42,28 @@ function MentorForm() {
         return null;
     }
     
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        // TODO: Add logic to save application to Firestore
+        const formData = new FormData(e.currentTarget);
+        const data = Object.fromEntries(formData.entries());
+
+        const applicationData = {
+            userId: user.uid,
+            fullName: data.fullName,
+            email: data.email,
+            linkedin: data.linkedin,
+            country: data.country,
+            expertise: data.expertise,
+            experience: data.experience ? Number(data.experience) : null,
+            availability: data.availability,
+            motivation: data.motivation,
+            status: 'submitted',
+            submittedAt: serverTimestamp(),
+        };
+
+        const applicationsRef = collection(firestore, 'mentor_applications');
+        await addDocumentNonBlocking(applicationsRef, applicationData);
+
         toast({
             title: 'Application Submitted!',
             description: `Thank you for your interest in becoming a mentor. We'll be in touch soon.`,
@@ -63,36 +85,36 @@ function MentorForm() {
                     <CardContent className="space-y-4">
                         <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="full-name">Full Name</Label>
-                                <Input id="full-name" placeholder="Your full name" defaultValue={user.displayName || ''} required />
+                                <Label htmlFor="fullName">Full Name</Label>
+                                <Input name="fullName" id="fullName" placeholder="Your full name" defaultValue={user.displayName || ''} required />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="email">Email</Label>
-                                <Input id="email" type="email" placeholder="Your email" defaultValue={user.email || ''} required />
+                                <Input name="email" id="email" type="email" placeholder="Your email" defaultValue={user.email || ''} required />
                             </div>
                         </div>
                         <div className="grid md:grid-cols-2 gap-4">
                              <div className="space-y-2">
                                 <Label htmlFor="linkedin">LinkedIn / Portfolio (Optional)</Label>
-                                <Input id="linkedin" placeholder="https://linkedin.com/in/..." />
+                                <Input name="linkedin" id="linkedin" placeholder="https://linkedin.com/in/..." />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="country">Country</Label>
-                                <Input id="country" placeholder="Your country" required />
+                                <Input name="country" id="country" placeholder="Your country" required />
                             </div>
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="expertise">Area of Expertise</Label>
-                            <Input id="expertise" placeholder="e.g., Career Advice, Web Development, Psychology" required />
+                            <Input name="expertise" id="expertise" placeholder="e.g., Career Advice, Web Development, Psychology" required />
                         </div>
                         <div className="grid md:grid-cols-2 gap-4">
                              <div className="space-y-2">
                                 <Label htmlFor="experience">Years of Experience (Optional)</Label>
-                                <Input id="experience" type="number" placeholder="e.g., 5" />
+                                <Input name="experience" id="experience" type="number" placeholder="e.g., 5" />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="availability">Availability</Label>
-                                <Select required>
+                                <Select name="availability" required>
                                     <SelectTrigger id="availability">
                                         <SelectValue placeholder="Select your availability" />
                                     </SelectTrigger>
@@ -107,6 +129,7 @@ function MentorForm() {
                          <div className="space-y-2">
                            <Label htmlFor="motivation">Motivation / Message (Optional)</Label>
                            <Textarea 
+                                name="motivation"
                                 id="motivation"
                                 placeholder="Why would you like to mentor students?"
                                 rows={4}

@@ -1,8 +1,9 @@
+
 'use client';
 
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,11 +14,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 function JoinStudyForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
     const { toast } = useToast();
 
     if (isUserLoading) {
@@ -39,9 +42,27 @@ function JoinStudyForm() {
         return null;
     }
     
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        // TODO: Add logic to save application to Firestore
+        const formData = new FormData(e.currentTarget);
+        const data = Object.fromEntries(formData.entries());
+
+        const applicationData = {
+            userId: user.uid,
+            fullName: data.fullName,
+            email: data.email,
+            institution: data.institution,
+            country: data.country,
+            areaOfInterest: data.areaOfInterest,
+            availability: data.availability,
+            reasonToJoin: data.reasonToJoin,
+            status: 'submitted',
+            submittedAt: serverTimestamp(),
+        };
+        
+        const studyParticipantsRef = collection(firestore, 'study_participants');
+        await addDocumentNonBlocking(studyParticipantsRef, applicationData);
+
         toast({
             title: 'Application Submitted!',
             description: `Your request to join the study program has been sent.`,
@@ -63,31 +84,31 @@ function JoinStudyForm() {
                     <CardContent className="space-y-4">
                         <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="full-name">Full Name</Label>
-                                <Input id="full-name" placeholder="Your full name" defaultValue={user.displayName || ''} required />
+                                <Label htmlFor="fullName">Full Name</Label>
+                                <Input name="fullName" id="fullName" placeholder="Your full name" defaultValue={user.displayName || ''} required />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="email">Email</Label>
-                                <Input id="email" type="email" placeholder="Your email" defaultValue={user.email || ''} required />
+                                <Input name="email" id="email" type="email" placeholder="Your email" defaultValue={user.email || ''} required />
                             </div>
                         </div>
                         <div className="grid md:grid-cols-2 gap-4">
                              <div className="space-y-2">
                                 <Label htmlFor="institution">Institution / University</Label>
-                                <Input id="institution" placeholder="Your institution" required />
+                                <Input name="institution" id="institution" placeholder="Your institution" required />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="country">Country</Label>
-                                <Input id="country" placeholder="Your country" required />
+                                <Input name="country" id="country" placeholder="Your country" required />
                             </div>
                         </div>
                          <div className="space-y-2">
-                            <Label htmlFor="area-of-study">Area of Study / Interest</Label>
-                            <Input id="area-of-study" placeholder="e.g., Psychology, Computer Science" required />
+                            <Label htmlFor="areaOfInterest">Area of Study / Interest</Label>
+                            <Input name="areaOfInterest" id="areaOfInterest" placeholder="e.g., Psychology, Computer Science" required />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="availability">Availability</Label>
-                             <Select required>
+                             <Select name="availability" required>
                                 <SelectTrigger id="availability">
                                     <SelectValue placeholder="Select your availability" />
                                 </SelectTrigger>
@@ -98,16 +119,17 @@ function JoinStudyForm() {
                             </Select>
                         </div>
                          <div className="space-y-2">
-                           <Label htmlFor="reason-to-join">Reason to Join</Label>
+                           <Label htmlFor="reasonToJoin">Reason to Join</Label>
                            <Textarea 
-                                id="reason-to-join"
+                                name="reasonToJoin"
+                                id="reasonToJoin"
                                 placeholder="Tell us why you are interested in joining this study program..."
                                 rows={5}
                             />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="resume">Upload Resume / Profile (Optional)</Label>
-                            <Input id="resume" type="file" />
+                            <Input name="resume" id="resume" type="file" />
                         </div>
                         <div className="flex items-center space-x-2">
                             <Checkbox id="consent" required />
