@@ -9,6 +9,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { FooterSubscriptionForm } from '@/components/layout/FooterSubscriptionForm';
 
 export const metadata: Metadata = {
   title: 'MindExp — Global Student Support & Mental Health Ecosystem',
@@ -82,10 +83,7 @@ export default function RootLayout({
                   <div className="md:col-span-4 space-y-4">
                      <h4 className="font-headline font-semibold">Stay updated</h4>
                      <p className="text-sm text-muted-foreground">Stay updated with new projects and opportunities.</p>
-                     <form className="flex gap-2">
-                      <Input type="email" placeholder="Enter your email" className="flex-1" />
-                      <Button type="submit">Subscribe</Button>
-                     </form>
+                     <FooterSubscriptionForm />
                      <div className="flex items-center gap-4 pt-2">
                           {socialLinks.map(item => (
                               <Link key={item.label} href={item.href} aria-label={item.label} className="text-muted-foreground hover:text-primary transition-colors">

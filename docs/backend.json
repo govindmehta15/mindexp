@@ -163,6 +163,15 @@
             "submittedAt": { "type": "string", "format": "date-time" }
         },
         "required": ["userId", "fullName", "email", "country", "expertise", "availability", "status", "submittedAt"]
+    },
+    "Subscription": {
+        "title": "Email Subscription",
+        "type": "object",
+        "properties": {
+            "email": { "type": "string", "format": "email" },
+            "subscribedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["email", "subscribedAt"]
     }
   },
   "auth": {
@@ -195,6 +204,10 @@
     "/mentor_applications": {
         "schema": { "$ref": "#/entities/MentorApplication" },
         "description": "Stores applications from users wanting to become mentors."
+    },
+    "/subscriptions": {
+        "schema": { "$ref": "#/entities/Subscription" },
+        "description": "Stores email addresses for the newsletter."
     }
   }
 }
