@@ -3,7 +3,7 @@ import type { Assessment } from './types';
 
 export const assessments: Assessment[] = [
   {
-    id: 'asm-1',
+    id: 'asm1',
     title: 'Cognitive Distortions Quiz',
     description: 'Identify common negative thought patterns.',
     type: 'MCQ',
