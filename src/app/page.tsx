@@ -2,9 +2,10 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
-import { BrainCircuit, BookOpen, MessageSquare, Heart, Users, Microscope, BookHeart, GraduationCap, Brain } from 'lucide-react';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { BrainCircuit, Heart, Users, GraduationCap, Brain, Microscope, BookHeart } from 'lucide-react';
 import React, { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 
 const featureCards = [
   { 
@@ -38,243 +39,260 @@ const featureCards = [
 ];
 
 const testimonials = [
-  { quote: "MindExp helped me understand stress patterns I ignored for months.", author: "Alex, University Student" },
-  { quote: "I found a mentor from another country through the community chat.", author: "Priya, Engineering Student" },
-  { quote: "The self-assessment tools are private, easy to use, and insightful.", author: "John, Medical Student" },
-  { quote: "Being part of a research project was a rewarding experience.", author: "Fatima, PhD Candidate" },
+    {
+        quote: "MindExp helped me understand stress patterns I ignored for months.",
+        author: "Alex, University Student",
+    },
+    {
+        quote: "I found a mentor from another country through the community chat.",
+        author: "Priya, Engineering Student",
+    },
+    {
+        quote: "The self-assessment tool was a gentle way to check in with myself.",
+        author: "Leo, Art & Design Student",
+    },
+     {
+        quote: "Being part of a research project made me feel like I was making a difference.",
+        author: "Samira, Psychology Major",
+    }
+];
+
+const researchProjects = [
+    {
+        title: "Global Student Mood Tracking Project",
+        summary: "In partnership with 12 universities, exploring digital stress patterns.",
+    },
+    {
+        title: "Impact of Peer Support on Academic Anxiety",
+        summary: "A study on the effectiveness of community-based support systems.",
+    },
 ];
 
 const contentHighlights = [
-    { title: "How to handle exam anxiety", href: "/content/1" },
-    { title: "5-minute breathing routine for focus", href: "/content/2" },
-    { title: "Why emotional awareness matters in classrooms", href: "/content/3" },
+    {
+        title: "How to handle exam anxiety",
+        category: "Article",
+        href: "/resources"
+    },
+    {
+        title: "5-minute breathing routine for focus",
+        category: "Video",
+        href: "/resources"
+    },
+    {
+        title: "Why emotional awareness matters in classrooms",
+        category: "Podcast",
+        href: "/resources"
+    }
 ];
 
 export default function HomePage() {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-
-  const handleMoodSelection = (mood: string) => {
-    setSelectedMood(mood);
-  };
-
+  
   return (
     <div className="flex flex-col">
       {/* 1. Hero Section */}
       <section className="bg-gradient-to-br from-primary/80 to-secondary/80 text-primary-foreground py-20 md:py-32">
         <div className="container mx-auto text-center px-4">
-          <div className="relative max-w-4xl mx-auto">
-            <h1 className="font-headline text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
-              Building the world’s first global student support ecosystem.
+            <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4">
+                Building the world’s first global student support ecosystem.
             </h1>
-            <p className="mt-6 text-lg md:text-xl text-primary-foreground/90">
-              Join MindExp — a safe, smart, and supportive space for every student’s growth, wellness, and innovation.
+            <p className="text-lg md:text-xl max-w-3xl mx-auto mb-8">
+                Join MindExp — a safe, smart, and supportive space for every student’s growth, wellness, and innovation.
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 transition-all duration-300 shadow-lg hover:shadow-xl">
-                <Link href="/community">🎓 Join the Student Community</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 transition-all duration-300">
-                <Link href="/assessments">🧠 Explore Self-Assessment</Link>
-              </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="lg" asChild>
+                    <Link href="/community">🎓 Join the Student Community</Link>
+                </Button>
+                <Button size="lg" variant="secondary" asChild>
+                    <Link href="/assessments">🧠 Explore Self-Assessment</Link>
+                </Button>
             </div>
-            <div className="absolute -top-12 -left-12 opacity-30 text-white">
-                <BrainCircuit size={48} />
-            </div>
-            <div className="absolute -top-4 -right-12 opacity-30 text-white">
-                <BookOpen size={40} />
-            </div>
-            <div className="absolute -bottom-12 -left-4 opacity-30 text-white">
-                <MessageSquare size={44} />
-            </div>
-             <div className="absolute -bottom-16 -right-8 opacity-30 text-white">
-                <Heart size={48} />
-            </div>
-          </div>
         </div>
       </section>
 
       {/* 2. Our Mission */}
-      <section className="py-20 md:py-28 bg-background">
-        <div className="container mx-auto text-center px-4">
-            <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4">Why We Exist</h2>
-            <div className="grid md:grid-cols-3 gap-8 mt-12 max-w-5xl mx-auto">
-                <Card className="text-center p-6 hover:shadow-lg transition-shadow duration-300">
-                    <CardHeader className="items-center">
-                        <div className="bg-secondary p-4 rounded-full">
-                            <BrainCircuit className="w-8 h-8 text-primary" />
-                        </div>
-                        <CardTitle className="font-headline text-xl mt-4">Mental Health Matters</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-muted-foreground">
-                        We aim to make mental wellness accessible and stigma-free for every student.
-                    </CardContent>
-                </Card>
-                <Card className="text-center p-6 hover:shadow-lg transition-shadow duration-300">
-                    <CardHeader className="items-center">
-                         <div className="bg-secondary p-4 rounded-full">
-                            <Users className="w-8 h-8 text-primary" />
-                        </div>
-                        <CardTitle className="font-headline text-xl mt-4">Global Community</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-muted-foreground">
-                        Students, psychologists, and mentors connecting across countries.
-                    </CardContent>
-                </Card>
-                 <Card className="text-center p-6 hover:shadow-lg transition-shadow duration-300">
-                    <CardHeader className="items-center">
-                         <div className="bg-secondary p-4 rounded-full">
-                            <Microscope className="w-8 h-8 text-primary" />
-                        </div>
-                        <CardTitle className="font-headline text-xl mt-4">Innovation in Support</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-muted-foreground">
-                        Using technology & research to redefine student well-being.
-                    </CardContent>
-                </Card>
-            </div>
-            <Button asChild variant="link" className="mt-12 text-primary">
-                <Link href="/about">Read Our Vision →</Link>
-            </Button>
-        </div>
+      <section className="py-16 md:py-24 bg-background">
+          <div className="container mx-auto text-center">
+              <h2 className="text-3xl md:text-4xl font-bold font-headline mb-4">Why We Exist</h2>
+              <div className="grid md:grid-cols-3 gap-8 mt-12 text-left">
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="flex items-center gap-2 font-headline">
+                              <Heart className="w-8 h-8 text-primary"/>
+                              Mental Health Matters
+                          </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          We aim to make mental wellness accessible and stigma-free for every student.
+                      </CardContent>
+                  </Card>
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="flex items-center gap-2 font-headline">
+                              <Users className="w-8 h-8 text-primary"/>
+                              Global Community
+                          </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                           Students, psychologists, and mentors connecting across countries.
+                      </CardContent>
+                  </Card>
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="flex items-center gap-2 font-headline">
+                              <BrainCircuit className="w-8 h-8 text-primary"/>
+                              Innovation in Support
+                          </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          Using technology & research to redefine student well-being.
+                      </CardContent>
+                  </Card>
+              </div>
+              <Button variant="link" asChild className="mt-8 text-lg">
+                  <Link href="/about">Read Our Vision →</Link>
+              </Button>
+          </div>
       </section>
 
-      {/* 3. Explore Ecosystem */}
-      <section className="py-20 md:py-28 bg-secondary/30">
-          <div className="container mx-auto text-center px-4">
-            <h2 className="font-headline text-3xl md:text-4xl font-bold mb-12">An ecosystem that grows with you.</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {featureCards.map((card, index) => (
-                <Card key={index} className="group overflow-hidden text-center hover:scale-105 hover:shadow-xl transition-all duration-300">
-                  <CardHeader className="items-center bg-secondary/40 p-6">
-                    <card.icon className="w-12 h-12 text-primary" />
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <h3 className="font-headline text-xl font-bold mb-2">{card.title}</h3>
-                    <p className="text-muted-foreground mb-4 text-sm">{card.description}</p>
-                    <Button asChild variant="link" className="text-primary">
-                      <Link href={card.href}>{card.cta}</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+      {/* 3. Explore the Ecosystem */}
+      <section className="py-16 md:py-24 bg-muted/50">
+          <div className="container mx-auto">
+              <h2 className="text-3xl md:text-4xl font-bold font-headline text-center mb-12">An ecosystem that grows with you.</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {featureCards.map((card) => (
+                      <Card key={card.title} className="flex flex-col text-center hover:shadow-xl hover:-translate-y-2 transition-transform duration-300">
+                          <CardHeader className="items-center">
+                              <div className="bg-primary/10 p-4 rounded-full">
+                                  <card.icon className="w-8 h-8 text-primary" />
+                              </div>
+                              <CardTitle className="font-headline pt-4">{card.title}</CardTitle>
+                          </CardHeader>
+                          <CardContent className="flex-grow">
+                              <p className="text-muted-foreground">{card.description}</p>
+                          </CardContent>
+                          <div className="p-6 pt-0">
+                            <Button variant="link" asChild>
+                                <Link href={card.href}>{card.cta}</Link>
+                            </Button>
+                          </div>
+                      </Card>
+                  ))}
+              </div>
           </div>
       </section>
 
       {/* 4. Testimonials */}
-      <section className="py-20 md:py-28">
-        <div className="container mx-auto px-4">
-           <h2 className="font-headline text-3xl md:text-4xl font-bold text-center mb-12">What Our Community Says</h2>
-            <Carousel opts={{ loop: true }} className="max-w-4xl mx-auto">
+       <section className="py-16 md:py-24 bg-background">
+          <div className="container mx-auto">
+             <h2 className="text-3xl md:text-4xl font-bold font-headline text-center mb-12">What our community is saying</h2>
+             <Carousel opts={{ loop: true }} className="max-w-4xl mx-auto">
                 <CarouselContent>
-                {testimonials.map((testimonial, index) => (
-                    <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-                        <Card className="h-full">
-                            <CardContent className="p-6 flex flex-col justify-center items-center text-center">
-                                <p className="italic text-muted-foreground">"{testimonial.quote}"</p>
-                                <p className="font-bold mt-4 text-sm">{testimonial.author}</p>
-                            </CardContent>
-                        </Card>
-                    </CarouselItem>
-                ))}
+                    {testimonials.map((testimonial, index) => (
+                        <CarouselItem key={index}>
+                            <Card>
+                                <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+                                    <p className="text-lg italic mb-4">"{testimonial.quote}"</p>
+                                    <p className="font-semibold text-primary">{testimonial.author}</p>
+                                </CardContent>
+                            </Card>
+                        </CarouselItem>
+                    ))}
                 </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-            </Carousel>
-            <div className="text-center mt-8">
-                 <Button asChild variant="link" className="text-primary">
+                <CarouselPrevious className="-left-4 md:-left-12" />
+                <CarouselNext className="-right-4 md:-right-12" />
+             </Carousel>
+              <div className="text-center mt-8">
+                <Button variant="link" asChild>
                     <Link href="/community">Read more stories →</Link>
                 </Button>
-            </div>
-        </div>
+              </div>
+          </div>
       </section>
 
       {/* 5. Research */}
-       <section className="py-20 md:py-28 bg-secondary/30">
-        <div className="container mx-auto px-4">
-          <h2 className="font-headline text-3xl md:text-4xl font-bold text-center mb-12">Research that shapes real student lives.</h2>
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-headline text-xl">🧬 Global Student Mood Tracking Project</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">In partnership with 12 universities, exploring digital stress patterns.</p>
-                <Button>Join Study</Button>
-              </CardContent>
-            </Card>
-             <Card>
-              <CardHeader>
-                <CardTitle className="font-headline text-xl">🧠 Early Anxiety Intervention Study</CardTitle>
-              </Header>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">Testing new digital tools for early identification of anxiety symptoms in first-year students.</p>
-                <Button>Join Study</Button>
-              </CardContent>
-            </Card>
+       <section className="py-16 md:py-24 bg-muted/50">
+          <div className="container mx-auto">
+             <h2 className="text-3xl md:text-4xl font-bold font-headline text-center mb-12">Research that shapes real student lives.</h2>
+             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                {researchProjects.map((project, index) => (
+                    <Card key={index}>
+                        <CardHeader>
+                            <CardTitle className="font-headline text-xl">{project.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground mb-4">{project.summary}</p>
+                            <Button>Join Study</Button>
+                        </CardContent>
+                    </Card>
+                ))}
+             </div>
           </div>
-        </div>
       </section>
 
-      {/* 6. Mini-Assessment */}
-      <section className="py-20 md:py-28">
-        <div className="container mx-auto text-center px-4 max-w-2xl">
-          <h2 className="font-headline text-3xl md:text-4xl font-bold mb-6">How are you feeling today?</h2>
-          <div className="flex justify-center gap-4 md:gap-6 mb-6">
-            {['😊', '😐', '😟', '😢', '😡'].map((mood) => (
-              <button
-                key={mood}
-                onClick={() => handleMoodSelection(mood)}
-                className={`text-4xl md:text-5xl p-3 rounded-full transition-all duration-200 ${selectedMood === mood ? 'bg-secondary scale-125' : 'hover:scale-110 hover:bg-secondary/50'}`}
-              >
-                {mood}
-              </button>
-            ))}
+      {/* 6. Mini Self-Assessment */}
+      <section className="py-16 md:py-24 bg-background">
+          <div className="container mx-auto text-center">
+              <h2 className="text-3xl md:text-4xl font-bold font-headline mb-6">How are you feeling today?</h2>
+              <div className="flex justify-center gap-4 text-4xl mb-8">
+                  {['😊', '😐', '😟', '😢', '😡'].map(mood => (
+                      <button 
+                          key={mood}
+                          onClick={() => setSelectedMood(mood)}
+                          className={`p-3 rounded-full transition-all duration-200 ${selectedMood === mood ? 'bg-primary/20 scale-125' : 'hover:bg-muted'}`}
+                      >
+                          {mood}
+                      </button>
+                  ))}
+              </div>
+              <Button size="lg" asChild>
+                  <Link href="/assessments">Start My Assessment</Link>
+              </Button>
           </div>
-          <Button asChild size="lg">
-            <Link href={`/self-assessment${selectedMood ? `?mood=${encodeURIComponent(selectedMood)}` : ''}`}>Start My Assessment</Link>
-          </Button>
-        </div>
       </section>
 
        {/* 7. Content Highlights */}
-       <section className="py-20 md:py-28 bg-secondary/30">
-        <div className="container mx-auto px-4">
-          <h2 className="font-headline text-3xl md:text-4xl font-bold text-center mb-12">Learn, Reflect, Grow.</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {contentHighlights.map((item) => (
-                 <Card key={item.title} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                        <h3 className="font-headline text-lg font-bold">{item.title}</h3>
-                        <Button asChild variant="link" className="p-0 mt-2 text-primary">
-                            <Link href={item.href}>Read more</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            ))}
-          </div>
-           <div className="text-center mt-12">
-                <Button asChild>
-                    <Link href="/content">Visit the Content Hub</Link>
-                </Button>
-           </div>
-        </div>
-      </section>
+        <section className="py-16 md:py-24 bg-muted/50">
+            <div className="container mx-auto">
+                <h2 className="text-3xl md:text-4xl font-bold font-headline text-center mb-12">Learn, Reflect, Grow.</h2>
+                <div className="grid md:grid-cols-3 gap-8">
+                    {contentHighlights.map(item => (
+                        <Card key={item.title} className="hover:shadow-lg transition-shadow">
+                            <CardHeader>
+                                <Badge variant="secondary" className="w-fit">{item.category}</Badge>
+                                <CardTitle className="font-headline text-xl pt-2">{item.title}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <Button variant="link" asChild className="p-0">
+                                    <Link href={item.href}>Read More →</Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+                 <div className="text-center mt-12">
+                    <Button asChild>
+                        <Link href="/content">Visit the Content Hub</Link>
+                    </Button>
+                </div>
+            </div>
+        </section>
 
-      {/* 8. Global CTA */}
-       <section className="py-20 md:py-28 bg-gradient-to-r from-primary to-accent">
-        <div className="container mx-auto text-center px-4 text-primary-foreground">
-          <h2 className="font-headline text-3xl md:text-4xl font-bold mb-6">We’re building a movement for students, by students.</h2>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" variant="secondary" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-              <Link href="/ambassador">Join as Student Ambassador</Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10">
-              <Link href="/professionals">Join as Psychologist / Research Partner</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+        {/* 8. Global CTA */}
+        <section className="py-20 bg-gradient-to-r from-primary to-accent">
+             <div className="container mx-auto text-center text-primary-foreground">
+                <h2 className="text-3xl md:text-4xl font-bold font-headline mb-6">We’re building a movement for students, by students.</h2>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button size="lg" variant="secondary">
+                        Join as Student Ambassador
+                    </Button>
+                    <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-primary">
+                       Join as Psychologist / Research Partner
+                    </Button>
+                </div>
+            </div>
+        </section>
     </div>
   );
 }
