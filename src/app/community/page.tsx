@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -86,13 +87,13 @@ export default function CommunityPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" asChild>
-                <Link href="/register?role=student">
+                <Link href="/community">
                   <GraduationCap className="mr-2" />
                   Join as Student
                 </Link>
               </Button>
               <Button size="lg" variant="secondary" asChild>
-                <Link href="/register?role=professional">
+                <Link href="/community">
                   <Brain className="mr-2" />
                   Join as Professional
                 </Link>
@@ -222,7 +223,7 @@ export default function CommunityPage() {
             ))}
           </div>
           <Button asChild variant="secondary">
-              <Link href="/join/mentor">Become a Mentor <Sparkles className="ml-2" /></Link>
+              <Link href="/community">Become a Mentor <Sparkles className="ml-2" /></Link>
           </Button>
         </div>
       </section>
@@ -300,12 +301,12 @@ export default function CommunityPage() {
                 <p className="text-lg mb-8 max-w-2xl mx-auto">Join thousands of students building a stronger, healthier academic world.</p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Button size="lg" variant="secondary" asChild>
-                        <Link href="/register?role=student">
+                        <Link href="/community">
                             <GraduationCap className="mr-2"/> Join as Student
                         </Link>
                     </Button>
                     <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-primary" asChild>
-                       <Link href="/register?role=professional">
+                       <Link href="/community">
                             <Brain className="mr-2" /> Join as Professional
                        </Link>
                     </Button>

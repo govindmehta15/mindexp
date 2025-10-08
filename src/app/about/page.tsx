@@ -47,7 +47,7 @@ export default function AboutPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" variant="secondary" asChild><Link href="#team">Meet Our Team</Link></Button>
-            <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-primary" asChild><Link href="/register">Join the Movement</Link></Button>
+            <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-primary" asChild><Link href="/community">Join the Movement</Link></Button>
           </div>
         </div>
       </motion.section>
@@ -144,7 +144,7 @@ export default function AboutPage() {
           </div>
            <div className="text-center mt-12">
             <Button size="lg" asChild>
-              <Link href="/register">Join us on this journey</Link>
+              <Link href="/community">Join us on this journey</Link>
             </Button>
           </div>
         </div>
@@ -210,7 +210,7 @@ export default function AboutPage() {
             ))}
           </div>
           <Button asChild variant="outline">
-              <Link href="/register?role=researcher">Want to collaborate with us? <span className="ml-2">🤝</span></Link>
+              <Link href="/community">Want to collaborate with us? <span className="ml-2">🤝</span></Link>
           </Button>
         </div>
       </motion.section>
@@ -302,7 +302,7 @@ export default function AboutPage() {
               <Link href="/community">Join Our Community</Link>
             </Button>
             <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-primary" asChild>
-              <Link href="/register?role=researcher">Collaborate with Us</Link>
+              <Link href="/community">Collaborate with Us</Link>
             </Button>
           </div>
         </div>

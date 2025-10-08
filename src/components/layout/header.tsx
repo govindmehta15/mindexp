@@ -114,9 +114,6 @@ export function AppHeader() {
               <Button variant="ghost" asChild>
                   <Link href="/login">Log In</Link>
               </Button>
-              <Button asChild className="green-gradient text-white">
-                  <Link href="/register">Sign Up</Link>
-              </Button>
             </>
           )}
 
