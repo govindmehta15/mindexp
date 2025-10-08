@@ -18,6 +18,7 @@ import {
   Settings,
   LogOut,
   Atom,
+  BookHeart,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -25,6 +26,7 @@ import { usePathname } from "next/navigation";
 const navItems = [
   { href: "/community", label: "Community", icon: MessageSquare },
   { href: "/resources", label: "Resource Hub", icon: Library },
+  { href: "/content", label: "Content Hub", icon: BookHeart },
   { href: "/events", label: "Events", icon: Calendar },
   { href: "/professionals", label: "Professionals", icon: Users },
   { href: "/moderation", label: "Moderation", icon: ShieldCheck },

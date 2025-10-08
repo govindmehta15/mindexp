@@ -45,6 +45,9 @@ export type Resource = {
   imageUrl: string;
   imageHint: string;
   comments: { user: string; comment: string }[];
+  author?: string;
+  publicationDate?: string;
+  tags?: string[];
 };
 
 export type Event = {

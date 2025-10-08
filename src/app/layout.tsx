@@ -19,7 +19,6 @@ const navItems = [
     { href: "/community", label: "Community" },
     { href: "/assessments", label: "Assessments" },
     { href: "/research", label: "Research" },
-    { href: "/resources", label: "Resources" },
     { href: "/content", label: "Content" },
     { href: "/about", label: "About" },
 ];
