@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { FirebaseError } from 'firebase/app';
@@ -45,25 +45,39 @@ export function FooterSubscriptionForm() {
     }
 
     setIsLoading(true);
-    try {
-      const subscriptionsRef = collection(firestore, 'subscriptions');
-      await addDoc(subscriptionsRef, {
+
+    const subscriptionsRef = collection(firestore, 'subscriptions');
+    const subscriptionData = {
         email: data.email,
         subscribedAt: serverTimestamp(),
+    };
+
+    addDoc(subscriptionsRef, subscriptionData)
+      .then(() => {
+        setIsSubmitted(true);
+        reset();
+      })
+      .catch((serverError) => {
+        // Create the rich, contextual error
+        const permissionError = new FirestorePermissionError({
+          path: subscriptionsRef.path,
+          operation: 'create',
+          requestResourceData: subscriptionData,
+        });
+
+        // Emit the error globally
+        errorEmitter.emit('permission-error', permissionError);
+
+        // Also show a generic toast to the user
+        toast({
+            variant: 'destructive',
+            title: 'Subscription Failed',
+            description: 'Could not subscribe. Please try again.',
+        });
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-      
-      setIsSubmitted(true);
-      reset();
-    } catch (error) {
-      console.error('Subscription error:', error);
-       toast({
-        variant: 'destructive',
-        title: 'Subscription Failed',
-        description: 'An unexpected error occurred. Please try again.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
   };
   
   if (isSubmitted) {
