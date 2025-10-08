@@ -1,0 +1,128 @@
+{
+  "entities": {
+    "UserAccount": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserAccount",
+      "type": "object",
+      "description": "Represents a user account within the WellTrack Community platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user account."
+        },
+        "clerkId": {
+          "type": "string",
+          "description": "The Clerk.dev User ID associated with this account."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User's display name, which can be anonymous if the user chooses."
+        },
+        "universityAffiliation": {
+          "type": "string",
+          "description": "The university the user is affiliated with."
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role within the platform (e.g., student, professional, researcher, moderator, admin)."
+        },
+        "profileId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserAccount 1:1 UserProfile)"
+        }
+      },
+      "required": [
+        "id",
+        "clerkId",
+        "email",
+        "displayName",
+        "universityAffiliation",
+        "role",
+        "profileId"
+      ]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents the profile information for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user profile."
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short biography or description of the user."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL of the user's avatar image.",
+          "format": "uri"
+        },
+        "location": {
+          "type": "string",
+          "description": "User's location."
+        },
+        "interests": {
+          "type": "array",
+          "description": "A list of user interests.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserAccount",
+          "schema": {
+            "$ref": "#/backend/entities/UserAccount"
+          },
+          "description": "Stores user account information. Uses path-based ownership: only the user with the corresponding userId can access this document.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user. This matches the Clerk.dev user ID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/profile",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile information. This is a subcollection of the user document, ensuring only the user can access their profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore structure prioritizes authorization independence and QAPs. User accounts and profiles are stored under `/users/{userId}` for path-based ownership. The structure supports the core features of WellTrack Community, including the community forum, resource hub, events calendar, and professional profiles. Because all assessment and community forum content is user-specific, the structure uses path-based ownership. This structure facilitates simple security rules based on `request.auth.uid`. Specifically, to enable `list` operations, all documents in a collection must share the same security requirements. This is achieved by segregating data based on ownership. This design supports the integrity of ownership, timestamps, and denormalized data. Importantly, this design avoids `get()` calls in security rules, enabling atomic operations (transactions/batches)."
+  }
+}
