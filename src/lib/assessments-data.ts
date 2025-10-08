@@ -14,14 +14,14 @@ export const assessments: Assessment[] = [
     contentUrls: [],
   },
   {
-    id: 'asm-2',
+    id: 'asm2',
     title: 'Effective Study Techniques',
     description: 'Learn and test your knowledge on proven study methods.',
     type: 'Video + Quiz',
     topic: 'Academic Skills',
     difficulty: 'Intermediate',
     estimatedTime: 25,
-    status: 'In Progress',
+    status: 'Not Started',
     contentUrls: ['https://www.youtube.com/watch?v=somevideo'],
   },
   {
