@@ -48,10 +48,10 @@ const features = [
 ];
 
 const circles = [
-    { title: "Focus & Study Balance", description: "Share strategies for managing study fatigue.", members: 128, tags: ["#wellness", "#focus"] },
-    { title: "Anxiety & Mindfulness", description: "Learn daily habits for emotional balance.", members: 245, tags: ["#wellness", "#mindfulness"] },
-    { title: "Career & Confidence", description: "Talk about self-doubt, interviews, and finding purpose.", members: 98, tags: ["#career", "#confidence"] },
-    { title: "Open Talks", description: "A safe space for open sharing with peers.", members: 312, tags: ["#support", "#general"] }
+    { id: "focus-study", title: "Focus & Study Balance", description: "Share strategies for managing study fatigue.", members: 128, tags: ["#wellness", "#focus"] },
+    { id: "anxiety-mindfulness", title: "Anxiety & Mindfulness", description: "Learn daily habits for emotional balance.", members: 245, tags: ["#wellness", "#mindfulness"] },
+    { id: "career-confidence", title: "Career & Confidence", description: "Talk about self-doubt, interviews, and finding purpose.", members: 98, tags: ["#career", "#confidence"] },
+    { id: "open-talks", title: "Open Talks", description: "A safe space for open sharing with peers.", members: 312, tags: ["#support", "#general"] }
 ];
 
 const events = [
@@ -87,13 +87,13 @@ export default function CommunityPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" asChild>
-                <Link href="/community">
+                <Link href="/login">
                   <GraduationCap className="mr-2" />
                   Join as Student
                 </Link>
               </Button>
               <Button size="lg" variant="secondary" asChild>
-                <Link href="/community">
+                <Link href="/login">
                   <Brain className="mr-2" />
                   Join as Professional
                 </Link>
@@ -159,7 +159,9 @@ export default function CommunityPage() {
                         </div>
                     </CardContent>
                     <div className="p-6 pt-0">
-                        <Button className="w-full">Join Circle</Button>
+                        <Button className="w-full" asChild>
+                          <Link href={`/community/join/${circle.id}`}>Join Circle</Link>
+                        </Button>
                     </div>
                 </Card>
             ))}
@@ -301,12 +303,12 @@ export default function CommunityPage() {
                 <p className="text-lg mb-8 max-w-2xl mx-auto">Join thousands of students building a stronger, healthier academic world.</p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Button size="lg" variant="secondary" asChild>
-                        <Link href="/community">
+                        <Link href="/login">
                             <GraduationCap className="mr-2"/> Join as Student
                         </Link>
                     </Button>
                     <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-primary" asChild>
-                       <Link href="/community">
+                       <Link href="/login">
                             <Brain className="mr-2" /> Join as Professional
                        </Link>
                     </Button>
