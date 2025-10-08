@@ -1,170 +1,166 @@
 /**
- * @fileoverview Firestore Security Rules for WellTrack Community.
+ * @fileoverview Firestore Security Rules for the WellTrack Community platform.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for user accounts
- * and allows open access for email subscriptions. All application data
- * (study, student, professional, circle, and mentor applications) can be created by anyone,
- * but cannot be listed, updated, or deleted.
+ * This ruleset prioritizes secure data access based on user roles and explicit ownership.
+ * It uses a combination of authentication checks and data validation to control read and write access to Firestore documents.
+ * The prototyping philosophy is permissive on data shapes to allow for fast iteration.
  *
  * Data Structure:
- * - /users/{userId}: Stores user account information.  Each user can only
- *   access their own document.
- * - /study_participants: Stores applications to join study programs.
- * - /student_community_applications: Stores applications from students.
- * - /professional_applications: Stores applications from professionals.
- * - /circle_applications: Stores applications to join circles.
- * - /mentor_applications: Stores applications from users wanting to become mentors.
+ * - /users/{userId}: Stores user account information, accessible only to the owner.
+ * - /study_participants: Stores applications to join study programs.  No write Access at this time.
+ * - /student_community_applications: Stores applications from students to join the community.  No write Access at this time.
+ * - /professional_applications: Stores applications from professionals to join the community. No write Access at this time.
+ * - /circle_applications: Stores applications to join specific circles.  No write Access at this time.
+ * - /mentor_applications: Stores applications from users wanting to become mentors.  No write Access at this time.
+ * - /subscriptions: Stores email addresses for newsletter subscriptions. Public reads, but ONLY backend writes are permitted.
  *
  * Key Security Decisions:
- * - Users can only read and write their own user account data.
+ * - User data is strictly private and only accessible to the authenticated user.
  * - Listing of users is disallowed.
- * - Applications (study, student, professional, circle, mentor) are publicly creatable, but not readable, updatable, or deletable by end-users.
- * - Email subscriptions are publicly accessible for creation.
+ * - All write operations require authentication.
+ * - Data validation is minimized to focus on authorization and relational integrity.
+ * - No write Access to Application data at this time.
  *
  * Denormalization for Authorization:
- * N/A - User account ownership is based on the user ID in the path.
- * Application ownership is implicitly public-creation only.
+ * The rules do not currently denormalize data. If more complex authorization schemes are needed in the future (e.g., role-based access to projects),
+ * consider denormalizing relevant data onto the documents to avoid costly `get()` calls in the rules.  For example, store Circle Members inside the Circle document to do authorization checks based on circle-membership.
  *
  * Structural Segregation:
- * N/A - No separation of public/private data within a single collection.
+ * The application uses separate collections for different data types (e.g., applications, user profiles), which simplifies the security rules.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user account documents.
+     * @description Checks if the request is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user ID matches the provided user ID.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user is the owner of an existing document.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+
+    /**
+     * @description Rules for user accounts.
      * @path /users/{userId}
-     * @allow (get) User with ID 'user123' can read their own profile.
-     * @allow (create) User with ID 'user123' can create their profile.
-     * @allow (update) User with ID 'user123' can update their own profile.
-     * @allow (delete) User with ID 'user123' can delete their own profile.
-     * @deny (get) User with ID 'user123' cannot read another user's profile ('user456').
-     * @deny (create) User with ID 'user123' cannot create a profile with ID 'user456'.
-     * @principle Enforces document ownership for reads and writes.
+     * @allow (create) Signed-in user creates their own account with matching userId.
+     * @allow (get, update, delete) Signed-in user accesses their own account.
+     * @deny (create) Signed-in user tries to create an account for another user.
+     * @deny (get, update, delete) Signed-in user tries to access another user's account.
+     * @principle Enforces document ownership for user data.
      */
     match /users/{userId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if false; // Listing users is not permitted.
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id; //Enforce immutability of UserID
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows anyone to create a study participant application, but no one can read, update, or delete.
+     * @description Rules for study participant applications.
      * @path /study_participants
-     * @allow (create) Any authenticated user can submit a study participant application.
-     * @deny (get) No one can read study participant applications.
-     * @deny (update) No one can update study participant applications.
-     * @deny (delete) No one can delete study participant applications.
-     * @principle Allows public creation with no read or modification access.
+     * @allow (create) Authenticated user submits a study participant application with a matching userId.
+     * @deny (get, list, update, delete) No read or write access to the application collection.  All interaction will occur via backend.
+     * @principle Only backend processes can modify applications after submission.
      */
-    match /study_participants/{document} {
+    match /study_participants {
       allow get: if false;
       allow list: if false;
-      allow create: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if false;
       allow delete: if false;
     }
 
     /**
-     * @description Allows anyone to create a student community application, but no one can read, update, or delete.
+     * @description Rules for student community applications.
      * @path /student_community_applications
-     * @allow (create) Any authenticated user can submit a student community application.
-     * @deny (get) No one can read student community applications.
-     * @deny (update) No one can update student community applications.
-     * @deny (delete) No one can delete student community applications.
-     * @principle Allows public creation with no read or modification access.
+     * @allow (create) Authenticated user submits a student community application with a matching userId.
+     * @deny (get, list, update, delete) No read or write access to the application collection.  All interaction will occur via backend.
+     * @principle Only backend processes can modify applications after submission.
      */
-    match /student_community_applications/{document} {
+    match /student_community_applications {
       allow get: if false;
       allow list: if false;
-      allow create: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if false;
       allow delete: if false;
     }
 
     /**
-     * @description Allows anyone to create a professional application, but no one can read, update, or delete.
+     * @description Rules for professional applications.
      * @path /professional_applications
-     * @allow (create) Any authenticated user can submit a professional application.
-     * @deny (get) No one can read professional applications.
-     * @deny (update) No one can update professional applications.
-     * @deny (delete) No one can delete professional applications.
-     * @principle Allows public creation with no read or modification access.
+     * @allow (create) Authenticated user submits a professional application with a matching userId.
+     * @deny (get, list, update, delete) No read or write access to the application collection.  All interaction will occur via backend.
+     * @principle Only backend processes can modify applications after submission.
      */
-    match /professional_applications/{document} {
+    match /professional_applications {
       allow get: if false;
       allow list: if false;
-      allow create: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if false;
       allow delete: if false;
     }
 
-        /**
-     * @description Allows anyone to create a circle application, but no one can read, update, or delete.
+    /**
+     * @description Rules for circle applications.
      * @path /circle_applications
-     * @allow (create) Any authenticated user can submit a circle application.
-     * @deny (get) No one can read circle applications.
-     * @deny (update) No one can update circle applications.
-     * @deny (delete) No one can delete circle applications.
-     * @principle Allows public creation with no read or modification access.
+     * @allow (create) Authenticated user submits a circle application with a matching userId.
+     * @deny (get, list, update, delete) No read or write access to the application collection.  All interaction will occur via backend.
+     * @principle Only backend processes can modify applications after submission.
      */
-    match /circle_applications/{document} {
+    match /circle_applications {
       allow get: if false;
       allow list: if false;
-      allow create: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if false;
       allow delete: if false;
     }
 
     /**
-     * @description Allows anyone to create a mentor application, but no one can read, update, or delete.
+     * @description Rules for mentor applications.
      * @path /mentor_applications
-     * @allow (create) Any authenticated user can submit a mentor application.
-     * @deny (get) No one can read mentor applications.
-     * @deny (update) No one can update mentor applications.
-     * @deny (delete) No one can delete mentor applications.
-     * @principle Allows public creation with no read or modification access.
+     * @allow (create) Authenticated user submits a mentor application with a matching userId.
+     * @deny (get, list, update, delete) No read or write access to the application collection.  All interaction will occur via backend.
+     * @principle Only backend processes can modify applications after submission.
      */
-    match /mentor_applications/{document} {
+    match /mentor_applications {
       allow get: if false;
       allow list: if false;
-      allow create: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if false;
       allow delete: if false;
     }
 
-    /**
-     * @description Allows anyone to create subscribe emails, but no one can read, update, or delete.
-     * @path /subscribe_emails
-     * @allow (create) Any user can create subscribe emails.
-     * @deny (get) No one can read subscribe emails.
-     * @deny (update) No one can update subscribe emails.
-     * @deny (delete) No one can delete subscribe emails.
-     * @principle Allows public creation with no read or modification access.
-     */
-    match /subscribe_emails/{document} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if true;
+      /**
+       * @description Rules for email subscriptions.
+       * @path /subscriptions
+       * @allow (get, list) Public access for reading.
+       * @allow (create) No user creation allowed.  Must happen on the backend.
+       * @allow (update, delete) Only backend processes can modify.
+       * @principle Only backend processes can modify subscriptions.
+       */
+    match /subscriptions {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false; // Prevents client-side subscription creation.
       allow update: if false;
       allow delete: if false;
     }
-  }
-
-  // Helper functions
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
-
-  function isExistingOwner(userId) {
-    return isOwner(userId) && resource != null;
   }
 }
