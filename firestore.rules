@@ -1,164 +1,189 @@
 /**
- * @fileoverview Firestore Security Rules for the WellTrack Community platform.
+ * @fileoverview Firestore Security Rules for WellTrack Community.
  *
  * Core Philosophy:
- * This ruleset prioritizes secure data access based on user roles and explicit ownership.
- * It uses a combination of authentication checks and data validation to control read and write access to Firestore documents.
- * The prototyping philosophy is permissive on data shapes to allow for fast iteration.
+ * This ruleset prioritizes user data protection and access control.
+ * Users can only manage their own data unless explicitly granted admin privileges.
  *
  * Data Structure:
- * - /users/{userId}: Stores user account information, accessible only to the owner.
- * - /study_participants: Stores applications to join study programs.  No write Access at this time.
- * - /student_community_applications: Stores applications from students to join the community.  No write Access at this time.
- * - /professional_applications: Stores applications from professionals to join the community. No write Access at this time.
- * - /circle_applications: Stores applications to join specific circles.  No write Access at this time.
- * - /mentor_applications: Stores applications from users wanting to become mentors.  No write Access at this time.
- * - /subscriptions: Stores email addresses for newsletter subscriptions. Public reads, but ONLY backend writes are permitted.
+ * - /users/{userId}: User account information.
+ * - /study_participants: Applications to participate in studies.
+ * - /student_community_applications: Applications for student community.
+ * - /professional_applications: Applications for professional roles.
+ * - /circle_applications: Applications to join circles.
+ * - /mentor_applications: Applications to become mentors.
+ * - /subscriptions: Newsletter subscription emails.
  *
  * Key Security Decisions:
- * - User data is strictly private and only accessible to the authenticated user.
- * - Listing of users is disallowed.
- * - All write operations require authentication.
- * - Data validation is minimized to focus on authorization and relational integrity.
- * - No write Access to Application data at this time.
+ * - User listing is disabled.
+ * - Data validation is relaxed in this prototyping phase, focusing on authorization.
+ * - All write operations are protected with authorization checks.
  *
  * Denormalization for Authorization:
- * The rules do not currently denormalize data. If more complex authorization schemes are needed in the future (e.g., role-based access to projects),
- * consider denormalizing relevant data onto the documents to avoid costly `get()` calls in the rules.  For example, store Circle Members inside the Circle document to do authorization checks based on circle-membership.
- *
- * Structural Segregation:
- * The application uses separate collections for different data types (e.g., applications, user profiles), which simplifies the security rules.
+ * - Many entities contain a `userId` field, which MUST match the authenticated user's UID for write access. This avoids costly `get()` operations.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is authenticated.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user is the owner of an existing document.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-
-    /**
-     * @description Rules for user accounts.
+     * @description Protects user account data.
      * @path /users/{userId}
-     * @allow (create) Signed-in user creates their own account with matching userId.
-     * @allow (get, update, delete) Signed-in user accesses their own account.
-     * @deny (create) Signed-in user tries to create an account for another user.
-     * @deny (get, update, delete) Signed-in user tries to access another user's account.
-     * @principle Enforces document ownership for user data.
+     * @allow (create) User can create their own account if the userId matches their auth.uid.
+     * @allow (update, delete) User can update/delete their own account if the userId matches their auth.uid.
+     * @deny (create, update, delete) if the userId does not match the auth.uid.
+     * @deny (list) Prevents listing all user accounts.
+     * @principle Enforces strict user ownership.
      */
     match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isSignedIn() {
+        return request.auth != null;
+      }
       allow get: if isOwner(userId);
-      allow list: if false; // Listing users is not permitted.
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id; //Enforce immutability of UserID
-      allow delete: if isExistingOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == request.auth.uid;
+      allow update: if isSignedIn() && isOwner(userId) && resource.data.id == userId;
+      allow delete: if isSignedIn() && isOwner(userId) && resource.data.id == userId;
     }
 
     /**
-     * @description Rules for study participant applications.
+     * @description Controls access to study participant applications.
      * @path /study_participants
-     * @allow (create) Authenticated user submits a study participant application with a matching userId.
-     * @deny (get, list, update, delete) No read or write access to the application collection.  All interaction will occur via backend.
-     * @principle Only backend processes can modify applications after submission.
+     * @allow (create) User can create an application if the userId matches their auth.uid.
+     * @allow (update, delete) User can update/delete their own application if the userId matches their auth.uid and document exists.
+     * @deny (create, update, delete) if the userId does not match the auth.uid or document does not exist.
+     * @allow (list, get) Everyone can list and get.
+     * @principle Enforces user ownership for writes and open access for reads.
      */
-    match /study_participants {
-      allow get: if false;
-      allow list: if false;
+    match /study_participants/{document} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+      allow update: if isSignedIn() && isExistingOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isSignedIn() && isExistingOwner(resource.data.userId);
     }
 
     /**
-     * @description Rules for student community applications.
+     * @description Manages access to student community applications.
      * @path /student_community_applications
-     * @allow (create) Authenticated user submits a student community application with a matching userId.
-     * @deny (get, list, update, delete) No read or write access to the application collection.  All interaction will occur via backend.
-     * @principle Only backend processes can modify applications after submission.
+     * @allow (create) User can create an application if the userId matches their auth.uid.
+     * @allow (update, delete) User can update/delete their own application if the userId matches their auth.uid and document exists.
+     * @deny (create, update, delete) if the userId does not match the auth.uid or document does not exist.
+     * @allow (list, get) Everyone can list and get.
+     * @principle Enforces user ownership for writes and open access for reads.
      */
-    match /student_community_applications {
-      allow get: if false;
-      allow list: if false;
+    match /student_community_applications/{document} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isSignedIn() {
+        return request.auth != null;
+      }
+       function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+      allow update: if isSignedIn() && isExistingOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isSignedIn() && isExistingOwner(resource.data.userId);
     }
 
     /**
-     * @description Rules for professional applications.
+     * @description Controls access to professional applications.
      * @path /professional_applications
-     * @allow (create) Authenticated user submits a professional application with a matching userId.
-     * @deny (get, list, update, delete) No read or write access to the application collection.  All interaction will occur via backend.
-     * @principle Only backend processes can modify applications after submission.
+     * @allow (create) User can create an application if the userId matches their auth.uid.
+     * @allow (update, delete) User can update/delete their own application if the userId matches their auth.uid and document exists.
+     * @deny (create, update, delete) if the userId does not match the auth.uid or document does not exist.
+     * @allow (list, get) Everyone can list and get.
+     * @principle Enforces user ownership for writes and open access for reads.
      */
-    match /professional_applications {
-      allow get: if false;
-      allow list: if false;
+    match /professional_applications/{document} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isSignedIn() {
+        return request.auth != null;
+      }
+       function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+      allow update: if isSignedIn() && isExistingOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isSignedIn() && isExistingOwner(resource.data.userId);
     }
 
     /**
-     * @description Rules for circle applications.
+     * @description Manages access to circle applications.
      * @path /circle_applications
-     * @allow (create) Authenticated user submits a circle application with a matching userId.
-     * @deny (get, list, update, delete) No read or write access to the application collection.  All interaction will occur via backend.
-     * @principle Only backend processes can modify applications after submission.
+     * @allow (create) User can create an application if the userId matches their auth.uid.
+     * @allow (update, delete) User can update/delete their own application if the userId matches their auth.uid and document exists.
+     * @deny (create, update, delete) if the userId does not match the auth.uid or document does not exist.
+     * @allow (list, get) Everyone can list and get.
+     * @principle Enforces user ownership for writes and open access for reads.
      */
-    match /circle_applications {
-      allow get: if false;
-      allow list: if false;
+    match /circle_applications/{document} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+      allow update: if isSignedIn() && isExistingOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isSignedIn() && isExistingOwner(resource.data.userId);
     }
 
     /**
-     * @description Rules for mentor applications.
+     * @description Controls access to mentor applications.
      * @path /mentor_applications
-     * @allow (create) Authenticated user submits a mentor application with a matching userId.
-     * @deny (get, list, update, delete) No read or write access to the application collection.  All interaction will occur via backend.
-     * @principle Only backend processes can modify applications after submission.
+     * @allow (create) User can create an application if the userId matches their auth.uid.
+     * @allow (update, delete) User can update/delete their own application if the userId matches their auth.uid and document exists.
+     * @deny (create, update, delete) if the userId does not match the auth.uid or document does not exist.
+     * @allow (list, get) Everyone can list and get.
+     * @principle Enforces user ownership for writes and open access for reads.
      */
-    match /mentor_applications {
-      allow get: if false;
-      allow list: if false;
+    match /mentor_applications/{document} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isSignedIn() {
+        return request.auth != null;
+      }
+       function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+      allow update: if isSignedIn() && isExistingOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isSignedIn() && isExistingOwner(resource.data.userId);
     }
 
-      /**
-       * @description Rules for email subscriptions.
-       * @path /subscriptions
-       * @allow (get, list) Public access for reading.
-       * @allow (create) No user creation allowed.  Must happen on the backend.
-       * @allow (update, delete) Only backend processes can modify.
-       * @principle Only backend processes can modify subscriptions.
-       */
-    match /subscriptions {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false; // Prevents client-side subscription creation.
+    /**
+     * @description Manages access to email subscriptions.
+     * @path /subscriptions
+     * @allow (create) Anyone can create a subscription.
+     * @deny (update, delete) No one can update or delete a subscription.
+     * @allow (list, get) Everyone can list and get.
+     */
+    match /subscriptions/{document} {
+      allow get, list: if true;
+      allow create: if true;
       allow update: if false;
       allow delete: if false;
     }

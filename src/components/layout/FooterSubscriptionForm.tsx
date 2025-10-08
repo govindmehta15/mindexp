@@ -8,9 +8,10 @@ import { z } from 'zod';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, addDocumentNonBlocking } from '@/firebase';
-import { collection, serverTimestamp } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
+import { FirebaseError } from 'firebase/app';
 
 const SubscriptionSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -46,7 +47,7 @@ export function FooterSubscriptionForm() {
     setIsLoading(true);
     try {
       const subscriptionsRef = collection(firestore, 'subscriptions');
-      await addDocumentNonBlocking(subscriptionsRef, {
+      await addDoc(subscriptionsRef, {
         email: data.email,
         subscribedAt: serverTimestamp(),
       });
@@ -55,7 +56,7 @@ export function FooterSubscriptionForm() {
       reset();
     } catch (error) {
       console.error('Subscription error:', error);
-      toast({
+       toast({
         variant: 'destructive',
         title: 'Subscription Failed',
         description: 'An unexpected error occurred. Please try again.',
