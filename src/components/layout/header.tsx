@@ -2,16 +2,18 @@
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Atom, Menu } from "lucide-react";
+import { Atom, Menu, Globe } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const navItems = [
     { href: "/community", label: "Community" },
+    { href: "/assessments", label: "Assessments" },
+    { href: "/research", label: "Research" },
     { href: "/resources", label: "Resources" },
-    { href: "/events", label: "Events" },
-    { href: "/professionals", label: "For Professionals" },
+    { href: "/content", label: "Content" },
+    { href: "/about", label: "About" },
 ];
 
 export function AppHeader() {
@@ -32,7 +34,7 @@ export function AppHeader() {
               href={item.href}
               className={cn(
                 "transition-colors hover:text-foreground/80",
-                pathname === item.href ? "text-foreground" : "text-foreground/60"
+                pathname.startsWith(item.href) ? "text-foreground" : "text-foreground/60"
               )}
             >
               {item.label}
@@ -41,10 +43,14 @@ export function AppHeader() {
         </nav>
 
         <div className="flex flex-1 items-center justify-end gap-2">
+            <Button variant="ghost" size="icon">
+                <Globe className="h-5 w-5" />
+                <span className="sr-only">Language</span>
+            </Button>
             <Button variant="ghost" asChild>
                 <Link href="/login">Log In</Link>
             </Button>
-            <Button asChild>
+            <Button asChild className="green-gradient text-white">
                 <Link href="/signup">Sign Up</Link>
             </Button>
 
@@ -67,7 +73,7 @@ export function AppHeader() {
                                 href={item.href}
                                 className={cn(
                                     "font-medium transition-colors hover:text-primary",
-                                    pathname === item.href ? "text-primary" : "text-muted-foreground"
+                                    pathname.startsWith(item.href) ? "text-primary" : "text-muted-foreground"
                                 )}
                             >
                                 {item.label}
