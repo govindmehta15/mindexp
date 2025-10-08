@@ -3,14 +3,14 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Loader2, Music, Pause, Play, Volume2, SkipBack, SkipForward, Save } from "lucide-react";
 import Link from "next/link";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { addDoc, collection, doc, serverTimestamp, setDoc, where, query } from "firebase/firestore";
+import { collection, doc, serverTimestamp, where, query, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 const QUESTIONS = [
@@ -159,18 +159,15 @@ export default function Asm1Page() {
             startedAt: serverTimestamp(),
             version: 'v1'
         };
-        addDoc(collection(firestore, 'asm1_sessions'), sessionData)
+        addDocumentNonBlocking(collection(firestore, 'asm1_sessions'), sessionData)
             .then(docRef => {
-                setSessionId(docRef.id);
-                setLoading(false);
-            })
-            .catch(e => {
-                console.error(e);
-                toast({ variant: 'destructive', title: 'Could not start session.'});
+                if (docRef) {
+                    setSessionId(docRef.id);
+                }
                 setLoading(false);
             });
     }
-  }, [user, isUserLoading, router, firestore, sessionId, toast]);
+  }, [user, isUserLoading, router, firestore, sessionId]);
 
   // auto-save on answer change
   useEffect(() => {
@@ -182,10 +179,8 @@ export default function Asm1Page() {
             optionalAnswers,
             lastSavedAt: serverTimestamp()
         };
-        setDoc(sessionRef, dataToSave, { merge: true })
-            .then(() => setSavedAt(new Date().toISOString()))
-            .catch(e => console.warn("Auto-save failed", e));
-        
+        setDocumentNonBlocking(sessionRef, dataToSave, { merge: true });
+        setSavedAt(new Date().toISOString());
     }, 800);
     return () => clearTimeout(timer);
   }, [answers, optionalAnswers, sessionId, firestore]);
@@ -268,29 +263,20 @@ export default function Asm1Page() {
     };
 
     setLoading(true);
-    try {
-        await addDoc(collection(firestore, 'asm1_reports'), reportData);
-        const sessionRef = doc(firestore, 'asm1_sessions', sessionId);
-        await setDoc(sessionRef, { status: 'completed', completedAt: serverTimestamp(), total_score: totalScore }, { merge: true });
-        
-        const sessionsQuery = query(collection(firestore, 'asm1_reports'), where('userId', '==', user.uid));
-        const { data: pastReports } = await (async () => {
-          const { getDocs } = await import('firebase/firestore');
-          const snapshot = await getDocs(sessionsQuery);
-          const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-          return { data };
-        })();
-        
-        const history = (pastReports || []).map((r, i) => ({ name: `Attempt ${i+1}`, score: r.score }));
+    
+    await addDocumentNonBlocking(collection(firestore, 'asm1_reports'), reportData);
+    const sessionRef = doc(firestore, 'asm1_sessions', sessionId);
+    await setDocumentNonBlocking(sessionRef, { status: 'completed', completedAt: serverTimestamp(), total_score: totalScore }, { merge: true });
+    
+    const sessionsQuery = query(collection(firestore, 'asm1_reports'), where('userId', '==', user.uid));
+    const snapshot = await getDocs(sessionsQuery);
+    const pastReports = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    
+    const history = (pastReports || []).map((r, i) => ({ name: `Attempt ${i+1}`, score: r.score }));
 
-        setReport({...reportData, history: [...history, {name: 'This Time', score: totalScore }]});
+    setReport({...reportData, history: [...history, {name: 'This Time', score: totalScore }]});
 
-    } catch (e) {
-        console.error(e);
-        toast({variant: 'destructive', title: 'Error submitting report.'});
-    } finally {
-        setLoading(false);
-    }
+    setLoading(false);
   };
 
   const handleRetake = () => {
@@ -412,6 +398,5 @@ export default function Asm1Page() {
     </div>
   );
 }
-
 
     
