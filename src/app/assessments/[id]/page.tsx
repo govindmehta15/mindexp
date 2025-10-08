@@ -1,20 +1,64 @@
 
 'use client';
 
-import { useParams, notFound } from 'next/navigation';
+import { useParams, notFound, useRouter } from 'next/navigation';
 import { assessments } from '@/lib/assessments-data';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Check, Clock, FileText } from 'lucide-react';
 import Link from 'next/link';
+import { useUser } from '@/firebase';
+import { useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AssessmentDetailPage() {
   const params = useParams();
+  const router = useRouter();
+  const { user, isUserLoading } = useUser();
+  const { toast } = useToast();
+  
   const id = params.id as string;
   const assessment = assessments.find((a) => a.id === id);
 
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      toast({
+        title: 'Authentication Required',
+        description: 'You need to be logged in to start an assessment.',
+        variant: 'destructive',
+      });
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router, toast]);
+
+
   if (!assessment) {
     notFound();
+  }
+  
+  const handleStartAssessment = () => {
+    if (!user) {
+       toast({
+        title: 'Please Log In',
+        description: 'You must be logged in to start an assessment.',
+        variant: 'destructive'
+      });
+      router.push('/login');
+    } else {
+      // Proceed with assessment logic
+      toast({
+        title: 'Assessment Started!',
+        description: `You have started the "${assessment.title}" assessment.`
+      });
+    }
+  };
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p>Loading user...</p>
+      </div>
+    );
   }
 
   return (
@@ -48,7 +92,7 @@ export default function AssessmentDetailPage() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button size="lg">Start Assessment</Button>
+          <Button size="lg" onClick={handleStartAssessment}>Start Assessment</Button>
         </CardFooter>
       </Card>
     </div>
