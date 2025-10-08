@@ -1,3 +1,94 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-community",
+      "description": "A group of diverse students talking in a university common area.",
+      "imageUrl": "https://picsum.photos/seed/1/1200/600",
+      "imageHint": "students talking"
+    },
+    {
+      "id": "avatar-1",
+      "description": "Avatar for a user",
+      "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NTk3Nzk4MDR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "avatar-2",
+      "description": "Avatar for a user",
+      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NTk3Nzk4MDR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "avatar-3",
+      "description": "Avatar for a user",
+      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NTk3Nzk4MDR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "avatar-4",
+      "description": "Avatar for a user",
+      "imageUrl": "https://images.unsplash.com/photo-1600180758890-6b94519a8ba6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NTk3Nzk4MDR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "resource-video",
+      "description": "Placeholder for a video resource thumbnail.",
+      "imageUrl": "https://picsum.photos/seed/201/400/225",
+      "imageHint": "laptop video"
+    },
+    {
+      "id": "resource-article",
+      "description": "Placeholder for an article resource thumbnail.",
+      "imageUrl": "https://picsum.photos/seed/202/400/225",
+      "imageHint": "reading book"
+    },
+    {
+      "id": "resource-podcast",
+      "description": "Placeholder for a podcast resource thumbnail.",
+      "imageUrl": "https://picsum.photos/seed/203/400/225",
+      "imageHint": "microphone podcast"
+    },
+    {
+      "id": "resource-guide",
+      "description": "Placeholder for a guide resource thumbnail.",
+      "imageUrl": "https://picsum.photos/seed/204/400/225",
+      "imageHint": "campus guide"
+    },
+    {
+      "id": "event-webinar",
+      "description": "Placeholder for an event banner.",
+      "imageUrl": "https://picsum.photos/seed/301/400/200",
+      "imageHint": "online meeting"
+    },
+    {
+      "id": "event-qa",
+      "description": "Placeholder for an event banner.",
+      "imageUrl": "https://picsum.photos/seed/302/400/200",
+      "imageHint": "group discussion"
+    },
+    {
+      "id": "event-workshop",
+      "description": "Placeholder for an event banner.",
+      "imageUrl": "https://picsum.photos/seed/303/400/200",
+      "imageHint": "writing resume"
+    },
+    {
+      "id": "prof-1",
+      "description": "Profile picture of a healthcare professional.",
+      "imageUrl": "https://picsum.photos/seed/401/100/100",
+      "imageHint": "doctor smiling"
+    },
+    {
+      "id": "prof-2",
+      "description": "Profile picture of a healthcare professional.",
+      "imageUrl": "https://picsum.photos/seed/402/100/100",
+      "imageHint": "therapist portrait"
+    },
+    {
+      "id": "prof-3",
+      "description": "Profile picture of a healthcare professional.",
+      "imageUrl": "https://picsum.photos/seed/403/100/100",
+      "imageHint": "researcher lab"
+    }
+  ]
 }
