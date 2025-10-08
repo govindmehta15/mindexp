@@ -87,7 +87,7 @@ export function AppHeader() {
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || 'User'} />
-                    <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -115,7 +115,7 @@ export function AppHeader() {
                   <Link href="/login">Log In</Link>
               </Button>
               <Button asChild className="green-gradient text-white">
-                  <Link href="/signup">Sign Up</Link>
+                  <Link href="/register">Sign Up</Link>
               </Button>
             </>
           )}
