@@ -7,17 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { motion } from 'framer-motion';
 import { Briefcase, HeartHandshake, Lightbulb, Users, BarChart3, Check, Globe, GitCommit, BrainCircuit, Bot, Microscope, Group } from 'lucide-react';
 import Link from 'next/link';
-import type { Metadata } from 'next';
-
-// Although we can't export metadata from a client component,
-// this can be moved to a parent layout or a server-side `generateMetadata` function later.
-// For now, it serves as a reference for the desired SEO.
-export const metadata: Metadata = {
-  title: 'About MindExp — Vision for Global Student Mental Health Support',
-  description:
-    'Learn about MindExp’s mission to create a global, research-driven support ecosystem for students’ mental health, learning, and innovation.',
-  keywords: 'mindexp vision, student mental health, global research collaboration, mental health technology',
-};
 
 const teamMembers = [
   { name: 'Dr. Evelyn Reed', role: 'Founder & CEO', tagline: 'Building human-centered technology for student wellness.', image: 'https://picsum.photos/seed/501/100/100', hint: 'woman smiling' },
