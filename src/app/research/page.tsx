@@ -3,20 +3,13 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion } from 'framer-motion';
-import { FileText, Video, BarChart2, Mic, Users, GitBranch, Shield, FlaskConical, Globe, BookOpen } from 'lucide-react';
+import { FileText, Video, BarChart2, Mic, Shield } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { featuredProjects, contentGallery, partners, faqItems } from '@/lib/research-data';
-
-export const metadata = {
-  title: "About MindExp — Vision for Global Student Mental Health Support",
-  description: "Learn about MindExp’s mission to create a global, research-driven support ecosystem for students’ mental health, learning, and innovation.",
-  keywords: "mindexp vision, student mental health, global research collaboration, mental health technology"
-};
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 50 },
