@@ -3,13 +3,15 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@/firebase";
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Loader2, Music, Pause, Play, Volume2, SkipBack, SkipForward, Save } from "lucide-react";
 import Link from "next/link";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { addDoc, collection, doc, serverTimestamp, setDoc, where, query } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 const QUESTIONS = [
   { text: "I often expect the worst outcome in everyday situations.", type: "Catastrophizing" },
@@ -30,33 +32,27 @@ const OPTIONAL_PROMPTS = [
 ];
 
 function PastAttempts({ userId }: { userId: string | null }) {
-  const [list, setList] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
 
-  useEffect(() => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-    // Mock API call
-    setTimeout(() => {
-      setList([
-        { id: 'sess_1', started_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), total_score: 22, status: 'completed' },
-        { id: 'sess_2', started_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), total_score: 18, status: 'completed' },
-      ]);
-      setLoading(false);
-    }, 1000);
-  }, [userId]);
+  const sessionsQuery = useMemoFirebase(() => {
+    if (!userId || !firestore) return null;
+    return query(
+      collection(firestore, 'asm1_reports'),
+      where('userId', '==', userId)
+    );
+  }, [firestore, userId]);
 
-  if (loading) return <div className="text-sm text-muted-foreground">Loading history...</div>
-  if (!list.length) return <div className="text-sm text-muted-foreground">No previous attempts yet.</div>;
+  const { data: reports, isLoading } = useCollection(sessionsQuery);
+
+  if (isLoading) return <div className="text-sm text-muted-foreground">Loading history...</div>
+  if (!reports || reports.length === 0) return <div className="text-sm text-muted-foreground">No previous attempts yet.</div>;
   
   return (
     <ul className="text-sm space-y-3">
-      {list.map((s) => (
+      {reports.map((s) => (
         <li key={s.id} className="p-2 border rounded-md hover:bg-muted/50">
-          <div className="font-semibold">{new Date(s.started_at).toLocaleDateString()}</div>
-          <div className="text-muted-foreground">Score: {s.total_score} &middot; {s.status}</div>
+          <div className="font-semibold">{s.completedAt ? new Date(s.completedAt.toDate()).toLocaleDateString() : 'In Progress'}</div>
+          <div className="text-muted-foreground">Score: {s.score} &middot; {s.category}</div>
         </li>
       ))}
     </ul>
@@ -139,6 +135,8 @@ function ReportView({ report, onRetake }: { report: any; onRetake: () => void })
 export default function Asm1Page() {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
   
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<number, number | null>>({});
@@ -147,28 +145,59 @@ export default function Asm1Page() {
   const [loading, setLoading] = useState(true);
   const [report, setReport] = useState<any>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [musicOn, setMusicOn] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login?redirect=/assessments/asm1');
-    } else if (!isUserLoading && user) {
-        // Mock session start
+    } else if (!isUserLoading && user && !sessionId) {
         setLoading(true);
-        setTimeout(() => {
-            setSessionId(`sess_${user.uid.slice(0, 5)}_${Date.now()}`);
-            setLoading(false);
-        }, 500);
+        const sessionData = {
+            userId: user.uid,
+            status: 'in_progress',
+            startedAt: serverTimestamp(),
+            version: 'v1'
+        };
+        addDoc(collection(firestore, 'asm1_sessions'), sessionData)
+            .then(docRef => {
+                setSessionId(docRef.id);
+                setLoading(false);
+            })
+            .catch(e => {
+                console.error(e);
+                toast({ variant: 'destructive', title: 'Could not start session.'});
+                setLoading(false);
+            });
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, firestore, sessionId, toast]);
 
   // auto-save on answer change
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || !firestore) return;
     const timer = setTimeout(() => {
-        setSavedAt(new Date().toISOString());
+        const sessionRef = doc(firestore, 'asm1_sessions', sessionId);
+        const dataToSave = {
+            answers,
+            optionalAnswers,
+            lastSavedAt: serverTimestamp()
+        };
+        setDoc(sessionRef, dataToSave, { merge: true })
+            .then(() => setSavedAt(new Date().toISOString()))
+            .catch(e => console.warn("Auto-save failed", e));
+        
     }, 800);
     return () => clearTimeout(timer);
-  }, [answers, optionalAnswers, sessionId]);
+  }, [answers, optionalAnswers, sessionId, firestore]);
+
+   useEffect(() => {
+    if (!audioRef.current) return;
+    if (musicOn) {
+        audioRef.current.play().catch(e => console.error("Audio play failed", e));
+    } else {
+        audioRef.current.pause();
+    }
+  }, [musicOn]);
 
   const handleAnswer = (idx: number, value: number) => {
     setAnswers(prev => ({ ...prev, [idx]: value }));
@@ -190,7 +219,8 @@ export default function Asm1Page() {
     }
   };
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!firestore || !sessionId || !user) return;
     // Scoring logic
     const totalScore = Object.values(answers).reduce((sum, a) => sum + (a ?? 0), 0);
     
@@ -215,7 +245,7 @@ export default function Asm1Page() {
     const distortionCounts: Record<string, number> = {};
     Object.keys(answers).forEach(qIdxStr => {
         const qIdx = Number(qIdxStr);
-        if((answers[qIdx] ?? 0) > 1) { // Count if distortion is present more than 'several days'
+        if((answers[qIdx] ?? 0) > 1) {
             const type = QUESTIONS[qIdx].type;
             distortionCounts[type] = (distortionCounts[type] || 0) + 1;
         }
@@ -226,18 +256,41 @@ export default function Asm1Page() {
       .slice(0, 2)
       .map(entry => entry[0]);
 
-    setReport({
+    const reportData = {
+      userId: user.uid,
+      sessionId,
       score: totalScore,
       category,
       summary,
       suggestions,
       top_distortions: top_distortions.length ? top_distortions : ["None prominent"],
-      history: [
-        { name: 'Attempt 1', score: 22 },
-        { name: 'Attempt 2', score: 18 },
-        { name: 'This Time', score: totalScore },
-      ]
-    });
+      completedAt: serverTimestamp(),
+    };
+
+    setLoading(true);
+    try {
+        await addDoc(collection(firestore, 'asm1_reports'), reportData);
+        const sessionRef = doc(firestore, 'asm1_sessions', sessionId);
+        await setDoc(sessionRef, { status: 'completed', completedAt: serverTimestamp(), total_score: totalScore }, { merge: true });
+        
+        const sessionsQuery = query(collection(firestore, 'asm1_reports'), where('userId', '==', user.uid));
+        const { data: pastReports } = await (async () => {
+          const { getDocs } = await import('firebase/firestore');
+          const snapshot = await getDocs(sessionsQuery);
+          const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+          return { data };
+        })();
+        
+        const history = (pastReports || []).map((r, i) => ({ name: `Attempt ${i+1}`, score: r.score }));
+
+        setReport({...reportData, history: [...history, {name: 'This Time', score: totalScore }]});
+
+    } catch (e) {
+        console.error(e);
+        toast({variant: 'destructive', title: 'Error submitting report.'});
+    } finally {
+        setLoading(false);
+    }
   };
 
   const handleRetake = () => {
@@ -245,7 +298,7 @@ export default function Asm1Page() {
       setOptionalAnswers({});
       setCurrent(0);
       setReport(null);
-      setSessionId(`sess_${user?.uid.slice(0, 5)}_${Date.now()}`);
+      setSessionId(null); // This will trigger creation of a new session
   }
 
   if (isUserLoading || loading) return (
@@ -254,7 +307,7 @@ export default function Asm1Page() {
       </div>
   );
 
-  if (!user) return null; // Redirect is handled by useEffect
+  if (!user) return null;
 
   if (report) {
     return <ReportView report={report} onRetake={handleRetake} />;
@@ -266,6 +319,7 @@ export default function Asm1Page() {
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
+        <audio ref={audioRef} src="/media/soft-meditation.mp3" loop />
         <nav className="text-sm text-muted-foreground">
             <Link href="/" className="hover:underline">Home</Link> / <Link href="/assessments" className="hover:underline">Assessments</Link> / Cognitive Distortions (ASM1)
         </nav>
@@ -320,12 +374,33 @@ export default function Asm1Page() {
                 )}
             </CardFooter>
         </Card>
-        <Card>
-            <CardHeader><CardTitle className="font-headline">Past Attempts</CardTitle></CardHeader>
-            <CardContent>
-                 <PastAttempts userId={user.uid} />
-            </CardContent>
-        </Card>
+        <div className="grid md:grid-cols-2 gap-6">
+            <Card>
+                 <CardHeader>
+                    <h3 className="font-semibold">Soft music</h3>
+                    <p className="text-sm text-muted-foreground">Toggle calming background music to help you focus.</p>
+                </CardHeader>
+                <CardContent className="flex items-center gap-4">
+                    <Button onClick={() => setMusicOn(p => !p)} size="icon" variant="outline">
+                        {musicOn ? <Pause /> : <Play />}
+                    </Button>
+                    <div className="flex items-center gap-2 flex-1">
+                        <Volume2 className="text-muted-foreground"/>
+                        <input type="range" min={0} max={1} step={0.01} 
+                            onChange={(e) => { if(audioRef.current) audioRef.current.volume = parseFloat(e.target.value); }} 
+                            defaultValue={0.5} 
+                            className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader><CardTitle className="font-headline">Past Attempts</CardTitle></CardHeader>
+                <CardContent>
+                    <PastAttempts userId={user?.uid} />
+                </CardContent>
+            </Card>
+        </div>
         <Card className="border-destructive/50">
              <CardHeader>
                 <CardTitle className="text-destructive">Important Disclaimer</CardTitle>
@@ -337,3 +412,6 @@ export default function Asm1Page() {
     </div>
   );
 }
+
+
+    

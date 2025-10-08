@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserAccount": {
@@ -172,6 +173,47 @@
             "subscribedAt": { "type": "string", "format": "date-time" }
         },
         "required": ["email", "subscribedAt"]
+    },
+    "Asm1Session": {
+      "title": "ASM1 Session",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "status": { "type": "string", "enum": ["in_progress", "completed", "saved"] },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "lastSavedAt": { "type": "string", "format": "date-time" },
+        "total_score": { "type": "number" },
+        "version": { "type": "string" },
+        "answers": { 
+          "type": "object",
+          "patternProperties": {
+            "^[0-9]+$": { "type": "number" }
+          }
+        },
+        "optionalAnswers": {
+          "type": "object",
+           "patternProperties": {
+            "^[0-9]+$": { "type": "string" }
+          }
+        }
+      },
+      "required": ["userId", "status", "startedAt"]
+    },
+    "Asm1Report": {
+        "title": "ASM1 Report",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "sessionId": { "type": "string" },
+            "score": { "type": "number" },
+            "category": { "type": "string" },
+            "summary": { "type": "string" },
+            "suggestions": { "type": "array", "items": { "type": "string" } },
+            "top_distortions": { "type": "array", "items": { "type": "string" } },
+            "completedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "sessionId", "score", "category", "completedAt"]
     }
   },
   "auth": {
@@ -208,6 +250,16 @@
     "/subscriptions": {
         "schema": { "$ref": "#/entities/Subscription" },
         "description": "Stores email addresses for the newsletter."
+    },
+    "/asm1_sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/Asm1Session" },
+      "description": "Stores user assessment sessions for the ASM1 quiz."
+    },
+    "/asm1_reports/{reportId}": {
+      "schema": { "$ref": "#/entities/Asm1Report" },
+      "description": "Stores generated reports for completed ASM1 sessions."
     }
   }
 }
+
+    
