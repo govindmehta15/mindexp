@@ -11,18 +11,20 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { ChartContainer } from '@/components/ui/chart';
-import { Loader2, ArrowLeft, ArrowRight, PlayCircle, BookOpen, FileText, Lightbulb, Music, Volume2, Pause, Play, Download, Calendar, Sparkles } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, PlayCircle, BookOpen, FileText, Lightbulb, Music, Volume2, Pause, Play, Download, Calendar, Sparkles, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import { collection, doc, serverTimestamp, where, query, getDocs } from 'firebase/firestore';
+import Image from 'next/image';
 
 // --- DATA MOCKS (as per spec) ---
 
 const LEARNING_MODULES = [
-    { id: 'm1', title: 'Active Recall & Testing', type: 'video', duration: 3, content: 'A 3-minute video explaining the testing effect.' },
-    { id: 'm2', title: 'Spacing & Interleaving', type: 'infographic', duration: 4, content: 'An infographic and short video on spacing your studies.' },
-    { id: 'm3', title: 'Study Routines & Timeboxing', type: 'video', duration: 3, content: 'A template and video on the Pomodoro technique.' },
-    { id: 'm4', title: 'Evidence Primer', type: 'reading', duration: 5, content: 'A one-page PDF summarizing the core research.' },
+    { id: 'm1', title: 'Active Recall & Testing', type: 'video', duration: 3, content: 'A 3-minute video explaining the testing effect.', url: '#', imageUrl: 'https://picsum.photos/seed/lm1/300/150', imageHint: 'person studying' },
+    { id: 'm2', title: 'Spacing & Interleaving', type: 'infographic', duration: 4, content: 'An infographic and short video on spacing your studies.', url: '#', imageUrl: 'https://picsum.photos/seed/lm2/300/150', imageHint: 'calendar schedule' },
+    { id: 'm3', title: 'Study Routines & Timeboxing', type: 'video', duration: 3, content: 'A template and video on the Pomodoro technique.', url: '#', imageUrl: 'https://picsum.photos/seed/lm3/300/150', imageHint: 'timer clock' },
+    { id: 'm4', title: 'Evidence Primer', type: 'reading', duration: 5, content: 'A one-page PDF summarizing the core research.', url: '#', imageUrl: 'https://picsum.photos/seed/lm4/300/150', imageHint: 'research paper' },
 ];
+
 
 const ASSESSMENT_ITEMS = [
     { id: 'q1', type: 'mcq', question: "Which technique best helps with long-term retention of factual material?", options: ["Re-read notes repeatedly", "Highlight key sentences", "Test yourself and space practice over days", "Study for long hours once"], answer: 2, topic: 'Retrieval' },
@@ -68,22 +70,37 @@ function generateReport(answers: Record<string, any>) {
 // --- UI COMPONENTS ---
 
 function LearningModule({ module, isCompleted, onComplete }: any) {
-    const Icon = module.type === 'video' ? PlayCircle : module.type === 'reading' ? BookOpen : FileText;
+    const Icon = module.type === 'video' ? PlayCircle : module.type === 'reading' ? BookOpen : ImageIcon;
     return (
-        <Card className={`mb-4 transition-all ${isCompleted ? 'bg-green-50' : 'bg-white'}`}>
-            <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Icon className="w-8 h-8 text-primary" />
+        <Card className={`mb-4 transition-all ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+            <CardContent className="p-4 grid md:grid-cols-3 gap-4 items-center">
+                <div className="md:col-span-2 flex items-start gap-4">
+                    <div className='flex-shrink-0'>
+                        <Checkbox checked={isCompleted} onCheckedChange={() => onComplete(module.id)} className="w-6 h-6" />
+                    </div>
                     <div>
                         <h3 className="font-semibold">{module.title}</h3>
                         <p className="text-sm text-muted-foreground">{module.content}</p>
+                        <div className="flex items-center gap-4 mt-2">
+                             <Badge variant="secondary" className="flex items-center gap-1">
+                                <Icon className="w-3 h-3" />
+                                {module.type}
+                            </Badge>
+                            <Button variant="link" size="sm" asChild className="p-0 h-auto">
+                                <Link href={module.url} target="_blank">View Content</Link>
+                            </Button>
+                        </div>
                     </div>
                 </div>
-                <Checkbox checked={isCompleted} onCheckedChange={() => onComplete(module.id)} />
+                <div className="relative h-24 w-full md:w-auto rounded-md overflow-hidden">
+                    <Image src={module.imageUrl} alt={module.title} layout="fill" objectFit="cover" data-ai-hint={module.imageHint} />
+                     {module.type === 'video' && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><PlayCircle className="w-8 h-8 text-white/80" /></div>}
+                </div>
             </CardContent>
         </Card>
     );
 }
+
 
 function ReportView({ report, onRetake }: { report: any; onRetake: () => void }) {
     const chartConfig = {
@@ -217,7 +234,10 @@ export default function Asm2Page() {
 
     const handleCompleteModule = (moduleId: string) => {
         setCompletedModules(prev => {
-            const newModules = [...new Set([...prev, moduleId])];
+            const newModules = prev.includes(moduleId)
+                ? prev.filter(id => id !== moduleId)
+                : [...new Set([...prev, moduleId])];
+
             if (sessionId) {
                 const sessionRef = doc(firestore, 'asm2_sessions', sessionId);
                 setDocumentNonBlocking(sessionRef, { completedModules: newModules }, { merge: true });
@@ -432,3 +452,5 @@ if (typeof window !== 'undefined') {
     styleSheet.innerText = customStyles;
     document.head.appendChild(styleSheet);
 }
+
+    
