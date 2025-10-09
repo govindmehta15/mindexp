@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/firebase/provider';
-import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import { initiateEmailSignUp, updateUserProfile } from '@/firebase/non-blocking-login';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,8 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { FirebaseError } from 'firebase/app';
 
-export default function LoginPage() {
+export default function SignupPage() {
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -22,35 +23,43 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await initiateEmailSignIn(auth, email, password);
+      const userCredential = await initiateEmailSignUp(auth, email, password);
+      // After creating the user, update their profile with the display name
+      if (userCredential.user) {
+        await updateUserProfile(auth, { displayName });
+      }
       toast({
-        title: 'Login Successful',
-        description: "You're now logged in.",
+        title: 'Sign-up Successful',
+        description: "Your account has been created.",
       });
-      router.push('/community');
+      router.push('/community'); // Redirect to a protected page after sign up
     } catch (error) {
-      console.error('Login Error:', error);
+      console.error('Sign-up Error:', error);
       let errorMessage = 'An unexpected error occurred.';
       if (error instanceof FirebaseError) {
         switch (error.code) {
-          case 'auth/user-not-found':
-          case 'auth/wrong-password':
-          case 'auth/invalid-credential':
-            errorMessage = 'Invalid email or password. Please try again.';
+          case 'auth/email-already-in-use':
+            errorMessage = 'This email address is already in use.';
             break;
+          case 'auth/weak-password':
+            errorMessage = 'The password is too weak. Please choose a stronger password.';
+            break;
+          case 'auth/invalid-email':
+              errorMessage = 'Please enter a valid email address.';
+              break;
           default:
-            errorMessage = 'Failed to log in. Please check your credentials and try again.';
+            errorMessage = 'Failed to create an account. Please try again.';
             break;
         }
       }
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
+        title: 'Sign-up Failed',
         description: errorMessage,
       });
     } finally {
@@ -58,16 +67,25 @@ export default function LoginPage() {
     }
   };
 
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/50">
       <Card className="mx-auto max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl font-headline">Login</CardTitle>
-          <CardDescription>Enter your email below to login to your account</CardDescription>
+          <CardTitle className="text-2xl font-headline">Sign Up</CardTitle>
+          <CardDescription>Enter your information to create an account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="grid gap-4">
+          <form onSubmit={handleSignup} className="grid gap-4">
+             <div className="grid gap-2">
+              <Label htmlFor="display-name">Name</Label>
+              <Input
+                id="display-name"
+                placeholder="Jane Doe"
+                required
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -80,12 +98,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="grid gap-2">
-              <div className="flex items-center">
-                <Label htmlFor="password">Password</Label>
-                <Link href="#" className="ml-auto inline-block text-sm underline">
-                  Forgot your password?
-                </Link>
-              </div>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -96,13 +109,13 @@ export default function LoginPage() {
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Login
+              Create an account
             </Button>
           </form>
-           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{' '}
-            <Link href="/signup" className="underline">
-              Sign up
+          <div className="mt-4 text-center text-sm">
+            Already have an account?{' '}
+            <Link href="/login" className="underline">
+              Log in
             </Link>
           </div>
         </CardContent>
