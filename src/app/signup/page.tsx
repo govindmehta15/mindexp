@@ -2,8 +2,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '@/firebase/provider';
+import { useAuth, useFirestore } from '@/firebase/provider';
 import { initiateEmailSignUp, updateUserProfile } from '@/firebase/non-blocking-login';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,19 +22,45 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!firestore) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Database service is not available."
+        });
+        return;
+    }
     setIsLoading(true);
 
     try {
       const userCredential = await initiateEmailSignUp(auth, email, password);
-      // After creating the user, update their profile with the display name
-      if (userCredential.user) {
+      const user = userCredential.user;
+      
+      // After creating the user, update their auth profile and create a Firestore document
+      if (user) {
         await updateUserProfile(auth, { displayName });
+
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userProfileData = {
+          id: user.uid,
+          clerkId: '', // This seems to be a legacy field, leaving it empty.
+          email: user.email,
+          displayName: displayName,
+          universityAffiliation: 'Not Specified',
+          role: 'student',
+          profileId: '', // This would be set when a detailed profile is created.
+        };
+
+        // Use the non-blocking function to create the user document
+        setDocumentNonBlocking(userDocRef, userProfileData, {});
       }
+
       toast({
         title: 'Sign-up Successful',
         description: "Your account has been created.",
