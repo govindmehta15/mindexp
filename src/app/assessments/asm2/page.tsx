@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { ChartContainer } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Loader2, ArrowLeft, ArrowRight, PlayCircle, BookOpen, FileText, Lightbulb, Music, Volume2, Pause, Play, Download, Calendar, Sparkles, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import { collection, doc, serverTimestamp, where, query, getDocs } from 'firebase/firestore';
@@ -29,7 +29,8 @@ const LEARNING_MODULES = [
 const ASSESSMENT_ITEMS = [
     { id: 'q1', type: 'mcq', question: "Which technique best helps with long-term retention of factual material?", options: ["Re-read notes repeatedly", "Highlight key sentences", "Test yourself and space practice over days", "Study for long hours once"], answer: 2, topic: 'Retrieval' },
     { id: 'q2', type: 'mcq', question: "What is 'interleaving'?", options: ["Mixing different topics in one study session", "Focusing on one topic for a long time", "Studying with a friend", "Using flashcards"], answer: 0, topic: 'Interleaving' },
-    { id: 'scenario', type: 'scenario', question: "You have two chapters to study for a test in one week. You prefer to study for long continuous sessions. What combination would you use?", options: ["Interleaving", "Spaced Repetition", "Summarization", "Re-reading"] },
+    { id: 'q3', type: 'mcq', question: "The Pomodoro Technique primarily helps with:", options: ["Understanding complex topics", "Managing time and focus", "Collaborating with peers", "Memorizing facts"], answer: 1, topic: 'Time Mgmt' },
+    { id: 'scenario', type: 'scenario', question: "You have two chapters to study for a test in one week. You prefer to study for long continuous sessions. What combination would you use?", options: ["Interleaving", "Spaced Repetition", "Summarization", "Re-reading"], correctOptions: ["Interleaving", "Spaced Repetition"], topic: 'Spacing' },
     { id: 'reflection', type: 'reflection', question: "Describe one concrete change you will make to your study routine this week." },
     { id: 'plan', type: 'plan', question: "Build a 30-minute study plan using the Pomodoro technique." },
 ];
@@ -37,32 +38,77 @@ const ASSESSMENT_ITEMS = [
 // --- REPORTING LOGIC ---
 
 function generateReport(answers: Record<string, any>) {
-    // Dummy scoring for demonstration
     let score = 0;
-    if (answers['q1'] === 2) score += 25;
-    if (answers['q2'] === 0) score += 25;
-    if (answers['scenario']?.includes("Spaced Repetition")) score += 25;
-    if (answers['plan']?.length > 0) score += 25;
-    
+    const topicScores: Record<string, { score: number, total: number }> = {
+        'Retrieval': { score: 0, total: 0 },
+        'Spacing': { score: 0, total: 0 },
+        'Interleaving': { score: 0, total: 0 },
+        'Time Mgmt': { score: 0, total: 0 },
+    };
+
+    ASSESSMENT_ITEMS.forEach(item => {
+        if (item.type === 'mcq' && item.topic) {
+            topicScores[item.topic].total += 25;
+            if (answers[item.id] === item.answer) {
+                topicScores[item.topic].score += 25;
+                score += 25;
+            }
+        } else if (item.type === 'scenario' && item.topic) {
+            topicScores[item.topic].total += 25;
+            const correct = (item.correctOptions || []).every(opt => answers[item.id]?.includes(opt));
+            if (correct) {
+                topicScores[item.topic].score += 25;
+                score += 25;
+            }
+        }
+    });
+
+    if (answers['plan']?.length > 0) {
+        topicScores['Time Mgmt'].score = (topicScores['Time Mgmt'].score || 0) + 25;
+        topicScores['Time Mgmt'].total = (topicScores['Time Mgmt'].total || 0) + 25;
+        score += 25;
+    }
+
+
     let category = "Needs Support";
     if (score >= 85) category = "Expert";
     else if (score >= 70) category = "Competent";
     else if (score >= 50) category = "Developing";
 
+    const topicBreakdown = Object.keys(topicScores).map(topic => ({
+        name: topic,
+        score: topicScores[topic].total > 0 ? Math.round((topicScores[topic].score / topicScores[topic].total) * 100) : 0
+    }));
+
+    const suggestions = [];
+    if (topicBreakdown.find(t => t.name === 'Retrieval' && t.score < 50)) {
+        suggestions.push("Focus on active recall. Instead of re-reading, try to write down what you remember from a chapter without looking at your notes.");
+    }
+    if (topicBreakdown.find(t => t.name === 'Spacing' && t.score < 50)) {
+        suggestions.push("Implement spaced repetition. Review new material 1 day, 3 days, and 7 days after first learning it.");
+    }
+     if (topicBreakdown.find(t => t.name === 'Interleaving' && t.score < 50)) {
+        suggestions.push("Try interleaving your practice. Instead of doing all problems for one chapter, mix in problems from another related chapter.");
+    }
+    if (topicBreakdown.find(t => t.name === 'Time Mgmt' && t.score < 50)) {
+        suggestions.push("Use the Pomodoro Technique for your next study session: 25 minutes of focused work, followed by a 5-minute break.");
+    }
+    if(suggestions.length === 0) {
+        suggestions.push("Great job! Continue to apply these effective study habits consistently.");
+    }
+
+    const starterPlan = [
+        `**Day 1:** Review today's lecture notes using active recall (15 mins). ${topicBreakdown.find(t => t.name === 'Retrieval' && t.score < 50) ? '**(Your focus area)**' : ''}`,
+        "**Day 2:** Quick self-quiz on Day 1 content (10 mins).",
+        `**Day 3:** Mix practice problems from two different topics (25 mins). ${topicBreakdown.find(t => t.name === 'Interleaving' && t.score < 50) ? '**(Your focus area)**' : ''}`,
+    ];
+
     return {
         score,
         category,
-        topicBreakdown: [
-            { name: 'Retrieval', score: answers['q1'] === 2 ? 100 : 20 },
-            { name: 'Spacing', score: answers['scenario']?.includes("Spaced Repetition") ? 100 : 30 },
-            { name: 'Interleaving', score: answers['q2'] === 0 ? 100 : 10 },
-            { name: 'Time Mgmt', score: answers['plan']?.length > 0 ? 90 : 40 },
-        ],
-        suggestions: [
-            score < 70 && "Start with 10-minute self-quizzes after each session.",
-            !answers['scenario']?.includes("Spaced Repetition") && "Try the 1-3-7 day rule for reviewing new topics.",
-            "Use the Pomodoro technique for your next 3 study sessions.",
-        ].filter(Boolean),
+        topicBreakdown,
+        suggestions,
+        starterPlan,
     };
 }
 
@@ -108,6 +154,10 @@ function ReportView({ report, onRetake }: { report: any; onRetake: () => void })
         label: "Score",
         color: "hsl(var(--primary))",
       },
+      history: {
+        label: "Past Scores",
+        color: "hsl(var(--secondary))",
+      }
     };
     return (
         <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
@@ -150,9 +200,7 @@ function ReportView({ report, onRetake }: { report: any; onRetake: () => void })
                         <CardContent className="space-y-2">
                             <p>Here’s a sample plan to get you started:</p>
                             <ul className="text-sm list-decimal list-inside text-muted-foreground">
-                                <li>**Day 1:** Review today's lecture notes using active recall (15 mins).</li>
-                                <li>**Day 2:** Quick self-quiz on Day 1 content (10 mins).</li>
-                                <li>**Day 3:** Mix practice problems from two different topics (25 mins).</li>
+                                {report.starterPlan.map((s: string) => <li key={s} dangerouslySetInnerHTML={{ __html: s.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />)}
                             </ul>
                         </CardContent>
                         <CardFooter className="gap-2">
@@ -160,6 +208,24 @@ function ReportView({ report, onRetake }: { report: any; onRetake: () => void })
                              <Button variant="outline"><Download className="mr-2"/> Download Plan</Button>
                         </CardFooter>
                     </Card>
+                    {report.history && report.history.length > 1 && (
+                        <Card>
+                             <CardHeader>
+                                <CardTitle>Your Progress</CardTitle>
+                                <CardDescription>Your scores over your last few attempts.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                                    <BarChart accessibilityLayer data={report.history}>
+                                        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false}/>
+                                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]}/>
+                                        <ChartTooltip content={<ChartTooltipContent />} />
+                                        <Bar dataKey="score" fill="var(--color-history, hsl(var(--secondary)))" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ChartContainer>
+                            </CardContent>
+                        </Card>
+                    )}
                 </CardContent>
                 <CardFooter className="gap-4">
                     <Button onClick={onRetake}>Retake Assessment</Button>
@@ -265,6 +331,7 @@ export default function Asm2Page() {
     const handleSubmit = async () => {
         if (!firestore || !sessionId || !user) return;
 
+        setIsLoading(true);
         const finalReportData = generateReport(answers);
         
         const reportToStore = {
@@ -274,16 +341,21 @@ export default function Asm2Page() {
             category: finalReportData.category,
             topicBreakdown: finalReportData.topicBreakdown,
             suggestions: finalReportData.suggestions,
+            starterPlan: finalReportData.starterPlan,
             completedAt: serverTimestamp(),
         };
-
-        setIsLoading(true);
         
         await addDocumentNonBlocking(collection(firestore, 'asm2_reports'), reportToStore);
         const sessionRef = doc(firestore, 'asm2_sessions', sessionId);
         await setDocumentNonBlocking(sessionRef, { status: 'report', completedAt: serverTimestamp(), total_score: finalReportData.score }, { merge: true });
 
-        setReport(finalReportData);
+        // Fetch history
+        const reportsQuery = query(collection(firestore, 'asm2_reports'), where('userId', '==', user.uid));
+        const snapshot = await getDocs(reportsQuery);
+        const pastReports = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        const history = pastReports.map((r, i) => ({ name: `Attempt ${i+1}`, score: r.score }));
+
+        setReport({...finalReportData, history: [...history, {name: 'This Time', score: finalReportData.score }]});
         setStep('report');
         setIsLoading(false);
     };
