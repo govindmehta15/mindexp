@@ -25,15 +25,15 @@ export const assessments: Assessment[] = [
     contentUrls: ['https://www.youtube.com/watch?v=somevideo'],
   },
   {
-    id: 'asm-3',
+    id: 'asm3',
     title: 'Mindfulness & Breathing Exercise',
-    description: 'A guided session to practice mindfulness.',
+    description: 'A guided session to practice mindfulness with breathing exercises.',
     type: 'Reading + Essay',
     topic: 'Mental Wellness',
     difficulty: 'Beginner',
     estimatedTime: 15,
     status: 'Not Started',
-    contentUrls: ['/path/to/breathing-guide.pdf'],
+    contentUrls: ['/media/asm3/breathing-guide.pdf'],
   },
   {
     id: 'asm-4',

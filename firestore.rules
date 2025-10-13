@@ -15,6 +15,8 @@
  * - /asm1_reports/{reportId}: Stores generated reports for completed ASM1 sessions, accessible only by the user.
  * - /asm2_sessions/{sessionId}: Stores user assessment sessions for the ASM2 quiz, accessible only by the user.
  * - /asm2_reports/{reportId}: Stores generated reports for completed ASM2 sessions, accessible only by the user.
+ * - /asm3_sessions/{sessionId}: Stores user assessment sessions for the ASM3 mindfulness practice, accessible only by the user.
+ * - /asm3_reports/{reportId}: Stores generated reports for completed ASM3 sessions, accessible only by the user.
  *
  * Key Security Decisions:
  * - User listing is disallowed to protect privacy.
@@ -254,6 +256,48 @@ service cloud.firestore {
      * @principle Enforces document ownership for all operations.
      */
     match /asm2_reports/{reportId} {
+      allow get: if isOwner(resource.data.userId);
+      allow list: if isOwner(request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isExistingOwner(resource.data.userId);
+      allow delete: if isExistingOwner(resource.data.userId);
+    }
+
+    /**
+     * @description Defines rules for ASM3 sessions.
+     * @path /asm3_sessions/{sessionId}
+     * @allow (create) User with ID 'user123' can create their own session.
+     * @deny (create) User with ID 'user123' cannot create a session for 'user456'.
+     * @allow (get) User with ID 'user123' can read their own session.
+     * @deny (get) User with ID 'user123' cannot read the session of 'user456'.
+     * @allow (update) User with ID 'user123' can update their own session.
+     * @deny (update) User with ID 'user123' cannot update the session of 'user456'.
+     * @allow (delete) User with ID 'user123' can delete their own session.
+     * @deny (delete) User with ID 'user123' cannot delete the session of 'user456'.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /asm3_sessions/{sessionId} {
+      allow get: if isOwner(resource.data.userId);
+      allow list: if isOwner(request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isExistingOwner(resource.data.userId);
+      allow delete: if isExistingOwner(resource.data.userId);
+    }
+
+    /**
+     * @description Defines rules for ASM3 reports.
+     * @path /asm3_reports/{reportId}
+     * @allow (create) User with ID 'user123' can create their own report.
+     * @deny (create) User with ID 'user123' cannot create a report for 'user456'.
+     * @allow (get) User with ID 'user123' can read their own report.
+     * @deny (get) User with ID 'user123' cannot read the report of 'user456'.
+     * @allow (update) User with ID 'user123' can update their own report.
+     * @deny (update) User with ID 'user123' cannot update the report of 'user456'.
+     * @allow (delete) User with ID 'user123' can delete their own report.
+     * @deny (delete) User with ID 'user123' cannot delete the report of 'user456'.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /asm3_reports/{reportId} {
       allow get: if isOwner(resource.data.userId);
       allow list: if isOwner(request.auth.uid);
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
