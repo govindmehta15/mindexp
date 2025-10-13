@@ -36,9 +36,9 @@ export const assessments: Assessment[] = [
     contentUrls: ['/media/asm3/breathing-guide.pdf'],
   },
   {
-    id: 'asm-4',
+    id: 'asm4',
     title: 'Social Anxiety Scenarios',
-    description: 'Review common social scenarios and provide feedback.',
+    description: 'Evaluate and improve your comfort and confidence in social situations through realistic scenarios.',
     type: 'Peer Review',
     topic: 'Social Skills',
     difficulty: 'Intermediate',
