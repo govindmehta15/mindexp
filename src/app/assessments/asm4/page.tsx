@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
+import { useAssessmentStatusContext } from '@/contexts/AssessmentStatusContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -732,6 +733,7 @@ export default function Asm4Page() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { refreshStatuses } = useAssessmentStatusContext();
 
   const [step, setStep] = useState<'warmup' | 'scenarios' | 'report'>('warmup');
   const [currentScenario, setCurrentScenario] = useState(0);
@@ -835,6 +837,9 @@ export default function Asm4Page() {
 
       // Create report
       await addDocumentNonBlocking(collection(firestore, 'asm4_reports'), reportData);
+      
+      // Refresh assessment statuses
+      refreshStatuses();
       
       setReport({ ...scores, reflection: warmupData.reflection });
       setStep('report');

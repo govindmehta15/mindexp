@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { FooterSubscriptionForm } from '@/components/layout/FooterSubscriptionForm';
+import { AssessmentStatusProvider } from '@/contexts/AssessmentStatusContext';
 
 export const metadata: Metadata = {
   title: 'MindExp — Global Student Support & Mental Health Ecosystem',
@@ -54,7 +55,8 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased bg-background">
         <FirebaseClientProvider>
-          <SidebarProvider>
+          <AssessmentStatusProvider>
+            <SidebarProvider>
             <div className="flex flex-col min-h-screen">
               <AppHeader />
               <main className="flex-1">
@@ -98,7 +100,8 @@ export default function RootLayout({
                 </div>
               </footer>
             </div>
-          </SidebarProvider>
+            </SidebarProvider>
+          </AssessmentStatusProvider>
         </FirebaseClientProvider>
         <Toaster />
       </body>
