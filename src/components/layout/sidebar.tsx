@@ -23,6 +23,7 @@ import {
   Home,
   ClipboardCheck,
   GraduationCap,
+  Briefcase,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -32,6 +33,7 @@ const navItems = [
   { href: "/community", label: "Community", icon: MessageSquare },
   { href: "/assessments", label: "Assessments", icon: ClipboardCheck },
   { href: "/academic-help", label: "Academic Help", icon: GraduationCap },
+  { href: "/career", label: "Career", icon: Briefcase },
   { href: "/resources", label: "Resource Hub", icon: Library },
   { href: "/content", label: "Content Hub", icon: BookHeart },
   { href: "/events", label: "Events", icon: Calendar },
@@ -84,5 +86,3 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
-
-    

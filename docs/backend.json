@@ -5,47 +5,120 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserAccount",
       "type": "object",
-      "description": "Represents a user account within the WellTrack Community platform.",
+      "description": "Represents a user account within the WellTrack Community platform. Now includes career profile fields.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the user account."
+        "id": { "type": "string", "description": "Unique identifier for the user account (matches Firebase Auth UID)." },
+        "clerkId": { "type": "string", "description": "The Clerk.dev User ID associated with this account." },
+        "email": { "type": "string", "description": "User's email address.", "format": "email" },
+        "displayName": { "type": "string", "description": "User's display name." },
+        "universityAffiliation": { "type": "string", "description": "The university the user is affiliated with." },
+        "role": { "type": "string", "description": "User's role (e.g., student, professional)." },
+        "profileId": { "type": "string", "description": "Reference to UserProfile." },
+        
+        "headline": { "type": "string", "description": "A short, professional headline." },
+        "bio": { "type": "string", "description": "A longer biography for the user's career profile." },
+        "education": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "institution": { "type": "string" },
+              "degree": { "type": "string" },
+              "field": { "type": "string" },
+              "year": { "type": "string" }
+            }
+          }
         },
-        "clerkId": {
-          "type": "string",
-          "description": "The Clerk.dev User ID associated with this account."
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "careerInterest": { "type": "string" },
+        "profilePicture": { "type": "string", "format": "uri" },
+        "resumeUrl": { "type": "string", "format": "uri" },
+        "socialLinks": {
+          "type": "object",
+          "properties": {
+            "linkedin": { "type": "string", "format": "uri" },
+            "github": { "type": "string", "format": "uri" },
+            "twitter": { "type": "string", "format": "uri" },
+            "portfolio": { "type": "string", "format": "uri" }
+          }
         },
-        "email": {
-          "type": "string",
-          "description": "User's email address.",
-          "format": "email"
+        "portfolioItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "description": { "type": "string" },
+              "projectUrl": { "type": "string", "format": "uri" },
+              "image": { "type": "string", "format": "uri" },
+              "type": { "type": "string", "enum": ["project", "certificate"] }
+            }
+          }
         },
-        "displayName": {
-          "type": "string",
-          "description": "User's display name, which can be anonymous if the user chooses."
-        },
-        "universityAffiliation": {
-          "type": "string",
-          "description": "The university the user is affiliated with."
-        },
-        "role": {
-          "type": "string",
-          "description": "The user's role within the platform (e.g., student, professional, researcher, moderator, admin)."
-        },
-        "profileId": {
-          "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserAccount 1:1 UserProfile)"
-        }
+        "connectionsCount": { "type": "number" },
+        "isPublic": { "type": "boolean", "default": true }
       },
-      "required": [
-        "id",
-        "clerkId",
-        "email",
-        "displayName",
-        "universityAffiliation",
-        "role",
-        "profileId"
-      ]
+      "required": ["id", "email", "displayName"]
+    },
+    "Connection": {
+        "title": "Connection",
+        "type": "object",
+        "description": "Represents a connection request between two users.",
+        "properties": {
+            "senderId": { "type": "string" },
+            "receiverId": { "type": "string" },
+            "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["senderId", "receiverId", "status", "createdAt"]
+    },
+    "Conversation": {
+        "title": "Conversation",
+        "type": "object",
+        "description": "Metadata for a chat conversation between users.",
+        "properties": {
+            "conversationId": { "type": "string" },
+            "participants": { "type": "array", "items": { "type": "string" } },
+            "lastMessage": { "type": "string" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["conversationId", "participants", "updatedAt"]
+    },
+    "Message": {
+        "title": "Message",
+        "type": "object",
+        "description": "A single message within a conversation.",
+        "properties": {
+            "senderId": { "type": "string" },
+            "text": { "type": "string" },
+            "timestamp": { "type": "string", "format": "date-time" },
+            "isRead": { "type": "boolean" }
+        },
+        "required": ["senderId", "text", "timestamp"]
+    },
+    "ProfileView": {
+        "title": "Profile View",
+        "type": "object",
+        "description": "Tracks a view of a user's profile.",
+        "properties": {
+            "profileId": { "type": "string" },
+            "viewerId": { "type": "string" },
+            "viewedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["profileId", "viewerId", "viewedAt"]
+    },
+    "CareerHelpPost": {
+        "title": "Career Help Post",
+        "type": "object",
+        "description": "A post from a student seeking career guidance or mentorship.",
+        "properties": {
+            "userId": { "type": "string" },
+            "title": { "type": "string" },
+            "description": { "type": "string" },
+            "tags": { "type": "array", "items": { "type": "string" } },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "title", "createdAt"]
     },
     "UserProfile": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -53,34 +126,13 @@
       "type": "object",
       "description": "Represents the profile information for a user.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the user profile."
-        },
-        "bio": {
-          "type": "string",
-          "description": "A short biography or description of the user."
-        },
-        "avatarUrl": {
-          "type": "string",
-          "description": "URL of the user's avatar image.",
-          "format": "uri"
-        },
-        "location": {
-          "type": "string",
-          "description": "User's location."
-        },
-        "interests": {
-          "type": "array",
-          "description": "A list of user interests.",
-          "items": {
-            "type": "string"
-          }
-        }
+        "id": { "type": "string", "description": "Unique identifier for the user profile." },
+        "bio": { "type": "string", "description": "A short biography or description of the user." },
+        "avatarUrl": { "type": "string", "description": "URL of the user's avatar image.", "format": "uri" },
+        "location": { "type": "string", "description": "User's location." },
+        "interests": { "type": "array", "description": "A list of user interests.", "items": { "type": "string" } }
       },
-      "required": [
-        "id"
-      ]
+      "required": ["id"]
     },
     "StudyParticipantApplication": {
       "title": "Study Participant Application",
@@ -334,7 +386,28 @@
   "firestore": {
     "/users/{userId}": {
         "schema": { "$ref": "#/entities/UserAccount" },
-        "description": "Stores user account information."
+        "description": "Stores user account and career profile information."
+    },
+     "/connections/{connectionId}": {
+        "schema": { "$ref": "#/entities/Connection" },
+        "description": "Stores connection requests between users."
+    },
+    "/conversations/{conversationId}": {
+        "schema": { "$ref": "#/entities/Conversation" },
+        "description": "Stores metadata for a chat conversation.",
+        "subcollections": {
+            "/messages/{messageId}": {
+                "schema": { "$ref": "#/entities/Message" }
+            }
+        }
+    },
+    "/profile_views/{viewId}": {
+        "schema": { "$ref": "#/entities/ProfileView" },
+        "description": "Tracks profile view events."
+    },
+    "/career_help_posts/{postId}": {
+        "schema": { "$ref": "#/entities/CareerHelpPost" },
+        "description": "Stores posts from students seeking career help."
     },
     "/study_participants": {
         "schema": { "$ref": "#/entities/StudyParticipantApplication" },
@@ -398,5 +471,3 @@
     }
   }
 }
-
-    
