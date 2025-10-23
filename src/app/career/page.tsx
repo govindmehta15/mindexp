@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, Plus, Loader2, Eye } from 'lucide-react';
+import { Search, Plus, Loader2, Eye, Sparkles, Users, HeartHandshake } from 'lucide-react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 
@@ -119,6 +119,50 @@ export default function CareerPage() {
              </Button>
           )}
         </div>
+      </section>
+
+      <section className="py-16 md:py-24 bg-background">
+          <div className="container mx-auto text-center">
+              <h2 className="text-3xl md:text-4xl font-bold font-headline mb-4">More Than a Profile — A Career Ecosystem for Wellness</h2>
+              <p className="text-lg max-w-3xl mx-auto text-muted-foreground mb-12">
+                We believe career readiness and mental well-being go hand-in-hand. This space is designed to help you grow with confidence.
+              </p>
+              <div className="grid md:grid-cols-3 gap-8 text-left">
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="flex items-center gap-3 font-headline">
+                              <Sparkles className="w-8 h-8 text-primary"/>
+                              Build Your Story
+                          </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          Showcase your skills, projects, and personality beyond a traditional resume. Let your unique journey shine.
+                      </CardContent>
+                  </Card>
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="flex items-center gap-3 font-headline">
+                              <Users className="w-8 h-8 text-primary"/>
+                              Connect with Purpose
+                          </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                           Find mentors, collaborators, and peers who share your academic and professional interests in a supportive environment.
+                      </CardContent>
+                  </Card>
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="flex items-center gap-3 font-headline">
+                              <HeartHandshake className="w-8 h-8 text-primary"/>
+                              Grow with Confidence
+                          </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          Tackle imposter syndrome and build self-assurance by connecting with a community that values growth over perfection.
+                      </CardContent>
+                  </Card>
+              </div>
+          </div>
       </section>
 
       <section className="container mx-auto p-4 md:p-6 sticky top-16 bg-background/95 backdrop-blur-sm z-10">
