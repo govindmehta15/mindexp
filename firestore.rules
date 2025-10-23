@@ -1,352 +1,122 @@
-/**
- * @file Firestore Security Rules
- * @description This ruleset enforces a strict user-ownership model for user-specific data
- * and allows public read access for certain collections, with owner-only write access.
- *
- * Data Structure:
- * - /users/{userId}: User account information, accessible only by the user.
- * - /study_participants: Applications to join study programs.
- * - /student_community_applications: Applications to join the student community.
- * - /professional_applications: Applications from professionals to join the community.
- * - /circle_applications: Applications to join specific circles.
- * - /mentor_applications: Applications to become mentors.
- * - /subscriptions: Email subscriptions for the newsletter.
- * - /asm1_sessions/{sessionId}: Stores user assessment sessions for the ASM1 quiz, accessible only by the user.
- * - /asm1_reports/{reportId}: Stores generated reports for completed ASM1 sessions, accessible only by the user.
- * - /asm2_sessions/{sessionId}: Stores user assessment sessions for the ASM2 quiz, accessible only by the user.
- * - /asm2_reports/{reportId}: Stores generated reports for completed ASM2 sessions, accessible only by the user.
- * - /asm3_sessions/{sessionId}: Stores user assessment sessions for the ASM3 mindfulness practice, accessible only by the user.
- * - /asm3_reports/{reportId}: Stores generated reports for completed ASM3 sessions, accessible only by the user.
- * - /asm4_sessions/{sessionId}: Stores user assessment sessions for the ASM4 social anxiety scenarios, accessible only by the user.
- * - /asm4_reports/{reportId}: Stores generated reports for completed ASM4 sessions, accessible only by the user.
- *
- * Key Security Decisions:
- * - User listing is disallowed to protect privacy.
- * - The default security posture for ambiguous relationships is strict owner-only access.
- * - All write operations are strictly controlled based on user authentication and ownership.
- */
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description Checks if the current user is signed in.
-     */
-    function isSignedIn() {
-      return request.auth != null;
+    
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
     }
 
-    /**
-     * @description Checks if the current user is the owner of the document.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-     /**
-     * @description Checks if the current user is the owner of the document and the document exists.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Enforces that a field cannot be changed after creation.
-     */
-    function isImmutable(fieldName) {
-        return resource.data[fieldName] == request.resource.data[fieldName];
-    }
-
-    /**
-     * @description Defines rules for user accounts.
-     * @path /users/{userId}
-     * @allow (create) User with ID 'user123' can create their own account.
-     * @deny (create) User with ID 'user123' cannot create an account for 'user456'.
-     * @allow (get) User with ID 'user123' can read their own account.
-     * @deny (get) User with ID 'user123' cannot read the account of 'user456'.
-     * @allow (update) User with ID 'user123' can update their own account.
-     * @deny (update) User with ID 'user123' cannot update the account of 'user456'.
-     * @allow (delete) User with ID 'user123' can delete their own account.
-     * @deny (delete) User with ID 'user123' cannot delete the account of 'user456'.
-     * @principle Enforces document ownership for all operations.
-     */
+    // --- User Profiles ---
+    // Logged-in users can view all profiles
+    // Users can only create/update their own profile
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && isImmutable('id');
-      allow delete: if isExistingOwner(userId);
+      allow list, get: if request.auth != null;
+      allow create, update: if request.auth.uid == userId;
     }
 
-      /**
-       * @description Rules for study participant applications. Anyone can create, but only the owner can modify.
-       * @path /study_participants/{applicationId}
-       * @allow (create) Any signed-in user can submit a study participant application.
-       * @deny (create) Unauthenticated users cannot submit applications.
-       * @allow (get) Any signed-in user can read the applications.
-       *
-       * @deny (update) Only the owner of the application can update it.
-       * @deny (delete) Only the owner of the application can delete it.
-       * @principle Public read, owner-only writes with ownership validation on create.
-       */
-    match /study_participants/{applicationId} {
+    // --- Career & Connections ---
+    match /connections/{connectionId} {
+      allow read, update: if request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId;
+      allow create: if request.auth.uid == request.resource.data.senderId;
+    }
+
+    match /conversations/{conversationId} {
+      allow read, create: if request.auth.uid in resource.data.participants;
+      match /messages/{messageId} {
+        allow read, create: if request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+      }
+    }
+    
+    match /profile_views/{viewId} {
+        allow create: if request.auth.uid == request.resource.data.viewerId;
+    }
+
+    match /career_help_posts/{postId} {
+      allow read, list: if request.auth != null;
+      allow create, update, delete: if request.auth.uid == resource.data.userId;
+    }
+
+    // --- Application Forms ---
+    match /study_participants/{appId} {
+      allow create: if request.auth.uid == request.resource.data.userId;
+    }
+     match /student_community_applications/{appId} {
+      allow create: if request.auth.uid == request.resource.data.userId;
+    }
+    match /professional_applications/{appId} {
+      allow create: if request.auth.uid == request.resource.data.userId;
+    }
+    match /circle_applications/{appId} {
+      allow create: if request.auth.uid == request.resource.data.userId;
+    }
+    match /mentor_applications/{appId} {
+      allow create: if request.auth.uid == request.resource.data.userId;
+    }
+
+    // --- Subscriptions ---
+    match /subscriptions/{subId} {
+      allow create: if true; // Anyone can subscribe
+    }
+
+    // --- Academic Help Content (Publicly Readable) ---
+    match /academic_categories/{categoryId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
     }
-
-    /**
-     * @description Rules for student community applications.  Anyone can create, but only the owner can modify.
-     * @path /student_community_applications/{applicationId}
-     * @allow (create) Any signed-in user can submit a student community application.
-     * @deny (create) Unauthenticated users cannot submit applications.
-     * @allow (get) Any signed-in user can read the applications.
-     * @deny (update) Only the owner of the application can update it.
-     * @deny (delete) Only the owner of the application can delete it.
-     * @principle Public read, owner-only writes with ownership validation on create.
-     */
-    match /student_community_applications/{applicationId} {
+    match /academic_tools/{toolId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
     }
-
-    /**
-     * @description Rules for professional applications. Anyone can create, but only the owner can modify.
-     * @path /professional_applications/{applicationId}
-     * @allow (create) Any signed-in user can submit a professional application.
-     * @deny (create) Unauthenticated users cannot submit applications.
-     * @allow (get) Any signed-in user can read the applications.
-     * @deny (update) Only the owner of the application can update it.
-     * @deny (delete) Only the owner of the application can delete it.
-     * @principle Public read, owner-only writes with ownership validation on create.
-     */
-    match /professional_applications/{applicationId} {
+    match /academic_articles/{articleId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
+    }
+    match /user_academic_progress/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+    match /academic_chat_sessions/{sessionId} {
+       allow read, write: if request.auth.uid == resource.data.userId;
     }
 
-    /**
-     * @description Rules for circle applications. Anyone can create, but only the owner can modify.
-     * @path /circle_applications/{applicationId}
-     * @allow (create) Any signed-in user can submit a circle application.
-     * @deny (create) Unauthenticated users cannot submit applications.
-     * @allow (get) Any signed-in user can read the applications.
-     * @deny (update) Only the owner of the application can update it.
-     * @deny (delete) Only the owner of the application can delete it.
-     * @principle Public read, owner-only writes with ownership validation on create.
-     */
-    match /circle_applications/{applicationId} {
-      allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
-    }
-
-    /**
-     * @description Rules for mentor applications.  Anyone can create, but only the owner can modify.
-     * @path /mentor_applications/{applicationId}
-     * @allow (create) Any signed-in user can submit a mentor application.
-     * @deny (create) Unauthenticated users cannot submit applications.
-     * @allow (get) Any signed-in user can read the applications.
-     * @deny (update) Only the owner of the application can update it.
-     * @deny (delete) Only the owner of the application can delete it.
-     * @principle Public read, owner-only writes with ownership validation on create.
-     */
-    match /mentor_applications/{applicationId} {
-      allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
-    }
-
-    /**
-     * @description Rules for email subscriptions.
-     * @path /subscriptions/{subscriptionId}
-     * @allow (create) Anyone can subscribe to the newsletter.
-     * @deny (create) Unauthenticated users cannot subscribe.
-     * @allow (get) Any signed-in user can read the subscriptions.
-     * @deny (update) No one can update a subscription.
-     * @deny (delete) No one can delete a subscription.
-     * @principle Public read, create only, no updates or deletes.
-     */
-    match /subscriptions/{subscriptionId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update: if false;
-      allow delete: if false;
-    }
-
-   /**
-     * @description Defines rules for ASM1 sessions.
-     * @path /asm1_sessions/{sessionId}
-     * @allow (create) User with ID 'user123' can create their own session.
-     * @deny (create) User with ID 'user123' cannot create a session for 'user456'.
-     * @allow (get) User with ID 'user123' can read their own session.
-     * @deny (get) User with ID 'user123' cannot read the session of 'user456'.
-     * @allow (update) User with ID 'user123' can update their own session.
-     * @deny (update) User with ID 'user123' cannot update the session of 'user456'.
-     * @allow (delete) User with ID 'user123' can delete their own session.
-     * @deny (delete) User with ID 'user123' cannot delete the session of 'user456'.
-     * @principle Enforces document ownership for all operations.
-     */
+    // --- Assessment 1 ---
     match /asm1_sessions/{sessionId} {
-      allow get: if isOwner(resource.data.userId);
-      allow list: if isOwner(request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
+      allow read: if request.auth.uid == resource.data.userId;
+      allow create: if request.auth.uid == request.resource.data.userId;
+      allow update: if request.auth.uid == resource.data.userId;
     }
-
-    /**
-     * @description Defines rules for ASM1 reports.
-     * @path /asm1_reports/{reportId}
-     * @allow (create) User with ID 'user123' can create their own report.
-     * @deny (create) User with ID 'user123' cannot create a report for 'user456'.
-     * @allow (get) User with ID 'user123' can read their own report.
-     * @deny (get) User with ID 'user123' cannot read the report of 'user456'.
-     * @allow (update) User with ID 'user123' can update their own report.
-     * @deny (update) User with ID 'user123' cannot update the report of 'user456'.
-     * @allow (delete) User with ID 'user123' can delete their own report.
-     * @deny (delete) User with ID 'user123' cannot delete the report of 'user456'.
-     * @principle Enforces document ownership for all operations.
-     */
     match /asm1_reports/{reportId} {
-      allow get: if isOwner(resource.data.userId);
-      allow list: if isOwner(request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
+      allow read: if request.auth.uid == resource.data.userId;
+      allow create: if request.auth.uid == request.resource.data.userId;
     }
 
-    /**
-     * @description Defines rules for ASM2 sessions.
-     * @path /asm2_sessions/{sessionId}
-     * @allow (create) User with ID 'user123' can create their own session.
-     * @deny (create) User with ID 'user123' cannot create a session for 'user456'.
-     * @allow (get) User with ID 'user123' can read their own session.
-     * @deny (get) User with ID 'user123' cannot read the session of 'user456'.
-     * @allow (update) User with ID 'user123' can update their own session.
-     * @deny (update) User with ID 'user123' cannot update the session of 'user456'.
-     * @allow (delete) User with ID 'user123' can delete their own session.
-     * @deny (delete) User with ID 'user123' cannot delete the session of 'user456'.
-     * @principle Enforces document ownership for all operations.
-     */
+    // --- Assessment 2 ---
     match /asm2_sessions/{sessionId} {
-      allow get: if isOwner(resource.data.userId);
-      allow list: if isOwner(request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
+      allow read: if request.auth.uid == resource.data.userId;
+      allow create: if request.auth.uid == request.resource.data.userId;
+      allow update: if request.auth.uid == resource.data.userId;
     }
-
-    /**
-     * @description Defines rules for ASM2 reports.
-     * @path /asm2_reports/{reportId}
-     * @allow (create) User with ID 'user123' can create their own report.
-     * @deny (create) User with ID 'user123' cannot create a report for 'user456'.
-     * @allow (get) User with ID 'user123' can read their own report.
-     * @deny (get) User with ID 'user123' cannot read the report of 'user456'.
-     * @allow (update) User with ID 'user123' can update their own report.
-     * @deny (update) User with ID 'user123' cannot update the report of 'user456'.
-     * @allow (delete) User with ID 'user123' can delete their own report.
-     * @deny (delete) User with ID 'user123' cannot delete the report of 'user456'.
-     * @principle Enforces document ownership for all operations.
-     */
     match /asm2_reports/{reportId} {
-      allow get: if isOwner(resource.data.userId);
-      allow list: if isOwner(request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
+      allow read: if request.auth.uid == resource.data.userId;
+      allow create: if request.auth.uid == request.resource.data.userId;
     }
-
-    /**
-     * @description Defines rules for ASM3 sessions.
-     * @path /asm3_sessions/{sessionId}
-     * @allow (create) User with ID 'user123' can create their own session.
-     * @deny (create) User with ID 'user123' cannot create a session for 'user456'.
-     * @allow (get) User with ID 'user123' can read their own session.
-     * @deny (get) User with ID 'user123' cannot read the session of 'user456'.
-     * @allow (update) User with ID 'user123' can update their own session.
-     * @deny (update) User with ID 'user123' cannot update the session of 'user456'.
-     * @allow (delete) User with ID 'user123' can delete their own session.
-     * @deny (delete) User with ID 'user123' cannot delete the session of 'user456'.
-     * @principle Enforces document ownership for all operations.
-     */
+    
+    // --- Assessment 3 ---
     match /asm3_sessions/{sessionId} {
-      allow get: if isOwner(resource.data.userId);
-      allow list: if isOwner(request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
+      allow read, update: if request.auth.uid == resource.data.userId;
+      allow create: if request.auth.uid == request.resource.data.userId;
     }
-
-    /**
-     * @description Defines rules for ASM3 reports.
-     * @path /asm3_reports/{reportId}
-     * @allow (create) User with ID 'user123' can create their own report.
-     * @deny (create) User with ID 'user123' cannot create a report for 'user456'.
-     * @allow (get) User with ID 'user123' can read their own report.
-     * @deny (get) User with ID 'user123' cannot read the report of 'user456'.
-     * @allow (update) User with ID 'user123' can update their own report.
-     * @deny (update) User with ID 'user123' cannot update the report of 'user456'.
-     * @allow (delete) User with ID 'user123' can delete their own report.
-     * @deny (delete) User with ID 'user123' cannot delete the report of 'user456'.
-     * @principle Enforces document ownership for all operations.
-     */
     match /asm3_reports/{reportId} {
-      allow get: if isOwner(resource.data.userId);
-      allow list: if isOwner(request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
+      allow read: if request.auth.uid == resource.data.userId;
+      allow create: if request.auth.uid == request.resource.data.userId;
     }
-
-    /**
-     * @description Defines rules for ASM4 sessions.
-     * @path /asm4_sessions/{sessionId}
-     * @allow (create) User with ID 'user123' can create their own session.
-     * @deny (create) User with ID 'user123' cannot create a session for 'user456'.
-     * @allow (get) User with ID 'user123' can read their own session.
-     * @deny (get) User with ID 'user123' cannot read the session of 'user456'.
-     * @allow (update) User with ID 'user123' can update their own session.
-     * @deny (update) User with ID 'user123' cannot update the session of 'user456'.
-     * @allow (delete) User with ID 'user123' can delete their own session.
-     * @deny (delete) User with ID 'user123' cannot delete the session of 'user456'.
-     * @principle Enforces document ownership for all operations.
-     */
+    
+    // --- Assessment 4 ---
     match /asm4_sessions/{sessionId} {
-      allow get: if isOwner(resource.data.userId);
-      allow list: if isOwner(request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
+      allow read, update: if request.auth.uid == resource.data.userId;
+      allow create: if request.auth.uid == request.resource.data.userId;
     }
-
-    /**
-     * @description Defines rules for ASM4 reports.
-     * @path /asm4_reports/{reportId}
-     * @allow (create) User with ID 'user123' can create their own report.
-     * @deny (create) User with ID 'user123' cannot create a report for 'user456'.
-     * @allow (get) User with ID 'user123' can read their own report.
-     * @deny (get) User with ID 'user123' cannot read the report of 'user456'.
-     * @allow (update) User with ID 'user123' can update their own report.
-     * @deny (update) User with ID 'user123' cannot update the report of 'user456'.
-     * @allow (delete) User with ID 'user123' can delete their own report.
-     * @deny (delete) User with ID 'user123' cannot delete the report of 'user456'.
-     * @principle Enforces document ownership for all operations.
-     */
     match /asm4_reports/{reportId} {
-      allow get: if isOwner(resource.data.userId);
-      allow list: if isOwner(request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
+      allow read: if request.auth.uid == resource.data.userId;
+      allow create: if request.auth.uid == request.resource.data.userId;
     }
   }
 }
