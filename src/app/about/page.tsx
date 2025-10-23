@@ -186,7 +186,7 @@ export default function AboutPage() {
       </motion.section>
 
       {/* 6. The People Behind MindExp */}
-      <motion.section 
+      <motion.section
         id="team"
         initial="hidden"
         whileInView="visible"
@@ -196,6 +196,8 @@ export default function AboutPage() {
       >
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold font-headline mb-12">Meet the Team</h2>
+          <p className="text-lg text-muted-foreground">Declare soon as we form a potential team</p>
+          {/*
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-12">
             {teamMembers.map(member => (
               <div key={member.name} className="flex flex-col items-center">
@@ -212,6 +214,7 @@ export default function AboutPage() {
           <Button asChild variant="outline">
               <Link href="/community">Want to collaborate with us? <span className="ml-2">🤝</span></Link>
           </Button>
+          */}
         </div>
       </motion.section>
 
