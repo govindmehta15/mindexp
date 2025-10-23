@@ -1,15 +1,27 @@
 
 'use client';
 
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
+import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
 import { motion } from 'framer-motion';
-import { FileText, Video, BarChart2, Mic, Shield } from 'lucide-react';
+import { FileText, Video, BarChart2, Mic, Shield, Loader2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { featuredProjects, contentGallery, partners, faqItems } from '@/lib/research-data';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 50 },
@@ -23,8 +35,120 @@ const iconMapping = {
     Podcast: Mic,
 };
 
+const proposalSchema = z.object({
+  fullName: z.string().min(1, 'Full name is required'),
+  email: z.string().email('Please enter a valid email'),
+  institution: z.string().min(1, 'Institution is required'),
+  proposalTitle: z.string().min(5, 'Title must be at least 5 characters'),
+  hypothesis: z.string().min(20, 'Please provide more detail'),
+  methodology: z.string().min(20, 'Please provide more detail'),
+  link: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+  consent: z.boolean().refine(val => val === true, { message: 'You must agree to the terms' }),
+});
+
+type ProposalFormData = z.infer<typeof proposalSchema>;
+
+function ProposalForm({ setDialogOpen }: { setDialogOpen: (open: boolean) => void }) {
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ProposalFormData>({
+    resolver: zodResolver(proposalSchema),
+    defaultValues: {
+      fullName: user?.displayName || '',
+      email: user?.email || '',
+    },
+  });
+
+  const onSubmit = async (data: ProposalFormData) => {
+    if (!firestore || !user) {
+        toast({ title: 'Error', description: 'You must be logged in to submit.', variant: 'destructive' });
+        return;
+    }
+    
+    const proposalData = {
+        ...data,
+        userId: user.uid,
+        submittedAt: serverTimestamp(),
+        status: 'submitted',
+    };
+
+    try {
+        await addDocumentNonBlocking(collection(firestore, 'research_proposals'), proposalData);
+        toast({
+            title: 'Proposal Submitted!',
+            description: 'Thank you for your submission. Our team will review it and get back to you.',
+        });
+        setDialogOpen(false);
+    } catch (error) {
+        console.error("Error submitting proposal: ", error);
+        toast({ title: 'Submission Failed', description: 'An error occurred. Please try again.', variant: 'destructive' });
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <Label htmlFor="fullName">Full Name</Label>
+          <Input id="fullName" {...register('fullName')} />
+          {errors.fullName && <p className="text-sm text-destructive">{errors.fullName.message}</p>}
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" type="email" {...register('email')} />
+          {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+        </div>
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="institution">Institution / Organization</Label>
+        <Input id="institution" {...register('institution')} />
+        {errors.institution && <p className="text-sm text-destructive">{errors.institution.message}</p>}
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="proposalTitle">Proposal Title</Label>
+        <Input id="proposalTitle" {...register('proposalTitle')} />
+        {errors.proposalTitle && <p className="text-sm text-destructive">{errors.proposalTitle.message}</p>}
+      </div>
+       <div className="space-y-1">
+        <Label htmlFor="hypothesis">Research Question / Hypothesis</Label>
+        <Textarea id="hypothesis" rows={3} {...register('hypothesis')} />
+        {errors.hypothesis && <p className="text-sm text-destructive">{errors.hypothesis.message}</p>}
+      </div>
+       <div className="space-y-1">
+        <Label htmlFor="methodology">Proposed Methodology</Label>
+        <Textarea id="methodology" rows={3} {...register('methodology')} />
+        {errors.methodology && <p className="text-sm text-destructive">{errors.methodology.message}</p>}
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="link">Link to Supporting Document (Optional)</Label>
+        <Input id="link" placeholder="https://docs.google.com/..." {...register('link')} />
+        {errors.link && <p className="text-sm text-destructive">{errors.link.message}</p>}
+      </div>
+      <div className="flex items-start space-x-2">
+        <Checkbox id="consent" {...register('consent')} />
+        <div className="grid gap-1.5 leading-none">
+            <Label htmlFor="consent" className="text-sm font-normal">
+              I agree to the MindExp data privacy and collaboration policy.
+            </Label>
+            {errors.consent && <p className="text-sm text-destructive">{errors.consent.message}</p>}
+        </div>
+      </div>
+      <DialogFooter>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Submit Proposal
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
 
 export default function ResearchPage() {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { user } = useUser();
+
   return (
     <div className="bg-background text-foreground">
 
@@ -42,7 +166,32 @@ export default function ResearchPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" variant="secondary" asChild><Link href="#projects">View Projects</Link></Button>
-            <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-primary"><Link href="#collaborate">Submit Your Proposal</Link></Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-primary">
+                  Submit Your Proposal
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="font-headline text-2xl">Submit a Research Proposal</DialogTitle>
+                  <DialogDescription>
+                    We're excited to learn about your ideas. Please provide as much detail as possible.
+                  </DialogDescription>
+                </DialogHeader>
+                {user ? (
+                  <ProposalForm setDialogOpen={setDialogOpen} />
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">Please log in or sign up to submit a proposal.</p>
+                    <div className="flex gap-4 justify-center">
+                      <Button asChild><Link href={`/login?redirect=/research`}>Log In</Link></Button>
+                      <Button variant="secondary" asChild><Link href={`/signup?redirect=/research`}>Sign Up</Link></Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </motion.section>
@@ -171,7 +320,30 @@ export default function ResearchPage() {
           <p className="text-lg max-w-3xl mx-auto text-muted-foreground mb-8">
             If you are a researcher, university faculty, clinician, or student with a project idea, data, or expertise, we’d love to hear from you. Together we can co-create tools, run studies, and publish findings that truly change lives.
           </p>
-          <Button size="lg">Submit Proposal</Button>
+           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg">Submit Proposal</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="font-headline text-2xl">Submit a Research Proposal</DialogTitle>
+                  <DialogDescription>
+                    We're excited to learn about your ideas. Please provide as much detail as possible.
+                  </DialogDescription>
+                </DialogHeader>
+                {user ? (
+                  <ProposalForm setDialogOpen={setDialogOpen} />
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">Please log in or sign up to submit a proposal.</p>
+                    <div className="flex gap-4 justify-center">
+                      <Button asChild><Link href={`/login?redirect=/research`}>Log In</Link></Button>
+                      <Button variant="secondary" asChild><Link href={`/signup?redirect=/research`}>Sign Up</Link></Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
         </div>
       </motion.section>
 
@@ -244,9 +416,30 @@ export default function ResearchPage() {
         <div className="container mx-auto text-center text-primary-foreground">
           <h2 className="text-3xl md:text-4xl font-bold font-headline mb-6">Let's Research Together.</h2>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" asChild>
-              <Link href="#collaborate">Submit Proposal</Link>
-            </Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" variant="secondary">Submit Proposal</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                 <DialogHeader>
+                  <DialogTitle className="font-headline text-2xl">Submit a Research Proposal</DialogTitle>
+                  <DialogDescription>
+                    We're excited to learn about your ideas. Please provide as much detail as possible.
+                  </DialogDescription>
+                </DialogHeader>
+                {user ? (
+                  <ProposalForm setDialogOpen={setDialogOpen} />
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">Please log in or sign up to submit a proposal.</p>
+                    <div className="flex gap-4 justify-center">
+                      <Button asChild><Link href={`/login?redirect=/research`}>Log In</Link></Button>
+                      <Button variant="secondary" asChild><Link href={`/signup?redirect=/research`}>Sign Up</Link></Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
             <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-primary">
               Browse Existing Projects
             </Button>

@@ -375,6 +375,23 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["sessionId", "userId", "messages"]
+    },
+    "ResearchProposal": {
+      "title": "Research Proposal",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "institution": { "type": "string" },
+        "proposalTitle": { "type": "string" },
+        "hypothesis": { "type": "string" },
+        "methodology": { "type": "string" },
+        "link": { "type": "string", "format": "uri" },
+        "status": { "type": "string", "enum": ["submitted", "under_review", "approved", "rejected"] },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "fullName", "email", "proposalTitle", "status", "submittedAt"]
     }
   },
   "auth": {
@@ -468,6 +485,10 @@
     "/academic_chat_sessions/{sessionId}": {
       "schema": { "$ref": "#/entities/AcademicChatSession" },
       "description": "Stores chat history between a user and the AI academic assistant."
+    },
+    "/research_proposals/{proposalId}": {
+        "schema": { "$ref": "#/entities/ResearchProposal" },
+        "description": "Stores research proposals submitted by users."
     }
   }
 }
