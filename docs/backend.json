@@ -244,6 +244,85 @@
             "completedAt": { "type": "string", "format": "date-time" }
         },
         "required": ["userId", "sessionId", "score", "category", "completedAt"]
+    },
+    "AcademicCategory": {
+      "title": "Academic Category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "icon": { "type": "string" },
+        "order": { "type": "number" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["id", "title", "order", "isActive"]
+    },
+    "AcademicTool": {
+      "title": "Academic Tool",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "description": { "type": "string" },
+        "duration": { "type": "string" },
+        "difficulty": { "type": "string" },
+        "contentType": { "type": "string", "enum": ["assessment", "guide", "tool"] },
+        "redirectUrl": { "type": "string", "format": "uri-reference" },
+        "thumbnail": { "type": "string", "format": "uri" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["id", "title", "categoryId", "contentType", "redirectUrl", "isActive"]
+    },
+    "AcademicArticle": {
+      "title": "Academic Article",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "content": { "type": "string" },
+        "author": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "thumbnail": { "type": "string", "format": "uri" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "content"]
+    },
+    "UserAcademicProgress": {
+      "title": "User Academic Progress",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "lastAssessmentId": { "type": "string" },
+        "scores": { "type": "object" },
+        "recommendations": { "type": "array", "items": { "type": "string" } },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId"]
+    },
+    "AcademicChatSession": {
+      "title": "Academic Chat Session",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "messages": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "from": { "type": "string", "enum": ["user", "bot"] },
+              "text": { "type": "string" }
+            },
+            "required": ["from", "text"]
+          } 
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sessionId", "userId", "messages"]
     }
   },
   "auth": {
@@ -296,6 +375,26 @@
     "/asm2_reports/{reportId}": {
       "schema": { "$ref": "#/entities/Asm2Report" },
       "description": "Stores generated reports for completed ASM2 sessions."
+    },
+    "/academic_categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/AcademicCategory" },
+      "description": "Stores categories for academic help resources."
+    },
+    "/academic_tools/{toolId}": {
+      "schema": { "$ref": "#/entities/AcademicTool" },
+      "description": "Stores individual academic tools, guides, and assessments."
+    },
+    "/academic_articles/{articleId}": {
+      "schema": { "$ref": "#/entities/AcademicArticle" },
+      "description": "Stores full articles for the knowledge library."
+    },
+    "/user_academic_progress/{userId}": {
+      "schema": { "$ref": "#/entities/UserAcademicProgress" },
+      "description": "Stores progress and recommendations for a user's academic journey."
+    },
+    "/academic_chat_sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/AcademicChatSession" },
+      "description": "Stores chat history between a user and the AI academic assistant."
     }
   }
 }

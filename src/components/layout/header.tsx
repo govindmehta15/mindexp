@@ -23,6 +23,7 @@ const navItems = [
     { href: "/", label: "Home" },
     { href: "/community", label: "Community" },
     { href: "/assessments", label: "Assessments" },
+    { href: "/academic-help", label: "Academic Help" },
     { href: "/research", label: "Research" },
     { href: "/content", label: "Content" },
     { href: "/about", label: "About" },
@@ -150,3 +151,5 @@ export function AppHeader() {
     </header>
   );
 }
+
+    
