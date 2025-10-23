@@ -3,8 +3,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { careerProfiles } from '@/lib/career-data';
-import type { CareerProfile } from '@/lib/career-data';
 import {
   Card,
   CardContent,
@@ -24,30 +22,31 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, Plus } from 'lucide-react';
-import { AppHeader } from '@/components/layout/header';
+import { Search, Plus, Loader2, Eye } from 'lucide-react';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
 
-const ProfileCard = ({ profile }: { profile: CareerProfile }) => {
+const ProfileCard = ({ profile }: { profile: any }) => {
   return (
     <Card className="flex flex-col hover:shadow-lg transition-shadow">
       <CardContent className="pt-6 flex flex-col items-center text-center">
         <Avatar className="w-24 h-24 mb-4">
-          <AvatarImage src={profile.profilePicture} alt={profile.fullName} data-ai-hint="person portrait" />
-          <AvatarFallback>{profile.fullName.charAt(0)}</AvatarFallback>
+          <AvatarImage src={profile.profilePicture} alt={profile.displayName} data-ai-hint="person portrait" />
+          <AvatarFallback>{profile.displayName?.charAt(0)}</AvatarFallback>
         </Avatar>
         <CardTitle className="font-headline text-xl">
-            <Link href={`/career/${profile.username}`}>{profile.fullName}</Link>
+            <Link href={`/career/${profile.displayName}`}>{profile.displayName}</Link>
         </CardTitle>
         <CardDescription className="text-sm">{profile.headline}</CardDescription>
       </CardContent>
       <CardFooter className="flex-grow flex flex-col items-center justify-end p-4 pt-0">
-         <div className="flex flex-wrap justify-center gap-1 my-3">
-          {profile.skills.slice(0, 3).map((skill) => (
+         <div className="flex flex-wrap justify-center gap-1 my-3 min-h-[24px]">
+          {profile.skills?.slice(0, 3).map((skill: string) => (
             <Badge key={skill} variant="secondary">{skill}</Badge>
           ))}
         </div>
         <Button className="w-full" asChild>
-          <Link href={`/career/${profile.username}`}>View Profile</Link>
+          <Link href={`/career/${profile.displayName}`}>View Profile</Link>
         </Button>
       </CardFooter>
     </Card>
@@ -57,17 +56,37 @@ const ProfileCard = ({ profile }: { profile: CareerProfile }) => {
 export default function CareerPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [skillFilter, setSkillFilter] = useState('all');
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
 
-  const allSkills = [...new Set(careerProfiles.flatMap((p) => p.skills))];
+  const profilesQuery = useMemoFirebase(() => {
+      if (!firestore) return null;
+      return query(collection(firestore, 'users'));
+  }, [firestore]);
 
-  const filteredProfiles = careerProfiles.filter((profile) => {
+  const { data: careerProfiles, isLoading: areProfilesLoading } = useCollection(profilesQuery);
+
+  const allSkills = [...new Set(careerProfiles?.flatMap((p) => p.skills || []) || [])];
+
+  const filteredProfiles = careerProfiles?.filter((profile) => {
     const matchesSearch =
-      profile.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      profile.headline.toLowerCase().includes(searchTerm.toLowerCase());
+      profile.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.headline?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSkill =
-      skillFilter === 'all' || profile.skills.includes(skillFilter);
+      skillFilter === 'all' || profile.skills?.includes(skillFilter);
     return matchesSearch && matchesSkill;
   });
+  
+  // Check if the current user has a profile with a headline (a good indicator of a created career profile)
+  const currentUserProfile = careerProfiles?.find(p => p.id === user?.uid);
+  const userHasProfile = !!currentUserProfile?.headline;
+
+  const getProfileLink = () => {
+    if (userHasProfile) {
+        return `/career/${currentUserProfile.displayName}`;
+    }
+    return '/career/me/edit';
+  };
 
   return (
     <div>
@@ -79,12 +98,26 @@ export default function CareerPage() {
           <p className="text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground mb-8">
             Explore profiles of talented students, connect with peers, and showcase your own work.
           </p>
-           <Button size="lg" asChild>
-            <Link href="/career/me/edit">
-                <Plus className="mr-2"/>
-                Create Your Profile
-            </Link>
-          </Button>
+          {isUserLoading ? (
+             <Button size="lg" disabled>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+             </Button>
+          ) : user ? (
+             <Button size="lg" asChild>
+                <Link href={getProfileLink()}>
+                    {userHasProfile ? <Eye className="mr-2"/> : <Plus className="mr-2"/>}
+                    {userHasProfile ? "View My Profile" : "Create Your Profile"}
+                </Link>
+             </Button>
+          ): (
+             <Button size="lg" asChild>
+                <Link href="/login?redirect=/career/me/edit">
+                    <Plus className="mr-2"/>
+                    Create Your Profile
+                </Link>
+             </Button>
+          )}
         </div>
       </section>
 
@@ -116,10 +149,15 @@ export default function CareerPage() {
       </section>
 
       <main className="container mx-auto p-4 md:p-6">
+       {areProfilesLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredProfiles.length > 0 ? (
+          {filteredProfiles && filteredProfiles.length > 0 ? (
             filteredProfiles.map((profile) => (
-              <ProfileCard key={profile.username} profile={profile} />
+              <ProfileCard key={profile.id} profile={profile} />
             ))
           ) : (
             <div className="col-span-full text-center py-12">
@@ -130,6 +168,7 @@ export default function CareerPage() {
             </div>
           )}
         </div>
+       )}
       </main>
     </div>
   );
